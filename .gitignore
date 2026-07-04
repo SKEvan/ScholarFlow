@@ -9,6 +9,8 @@
 .env
 __pycache__/
 env/
+data/
+workflow.json
 
 
 

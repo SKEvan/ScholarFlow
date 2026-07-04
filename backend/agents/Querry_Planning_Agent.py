@@ -1,5 +1,5 @@
 """
-Agent 2 — Query Planning Agent
+Agent 1 — Query Planning Agent
 ================================
 Purpose:
     Convert the user's research topic into optimized academic search queries.
@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import os
 import re
-from typing import List, Optional, TypedDict
+import json
+from typing import List, Optional
 
 from dotenv import load_dotenv
 from google import genai
+from System_Prompts import Query_Generator_Prompt
+from workflow_state import update_workflow_state
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -34,33 +37,51 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 # Core logic
 # ---------------------------------------------------------------------------
 
-PROMPT_TEMPLATE = """You are an academic research assistant.
-Generate 5 to 10 distinct, high-quality academic search queries for the
-following research topic. The queries should cover different angles,
-subtopics, and relevant keywords a researcher would use on Google Scholar,
-Semantic Scholar, or arXiv.
-
-Research topic: "{topic}"
-
-Return ONLY the queries, one per line, with no numbering, bullets, or
-extra commentary.
-"""
 
 
 def _parse_queries(raw_text: str) -> List[str]:
-    """Clean the LLM output into a deduplicated list of query strings."""
-    lines = [line.strip() for line in raw_text.strip().splitlines()]
+    """Extract and deduplicate the queries array from JSON model output."""
+
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+
+    raw_queries: List[str] = []
+
+    # Try full JSON object first.
+    try:
+        payload = json.loads(text)
+        if isinstance(payload, dict):
+            maybe_queries = payload.get("queries", [])
+            if isinstance(maybe_queries, list):
+                raw_queries = maybe_queries
+        elif isinstance(payload, list):
+            raw_queries = payload
+    except json.JSONDecodeError:
+        # Fallback: extract first JSON object embedded in text.
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                payload = json.loads(text[start : end + 1])
+                maybe_queries = payload.get("queries", []) if isinstance(payload, dict) else []
+                if isinstance(maybe_queries, list):
+                    raw_queries = maybe_queries
+            except json.JSONDecodeError:
+                raw_queries = []
+
     queries: List[str] = []
     seen = set()
-
-    for line in lines:
-        cleaned = re.sub(r"^[\d\.\-\*\)\s]+", "", line).strip()
+    for query in raw_queries:
+        cleaned = str(query).strip()
         if not cleaned:
             continue
         key = cleaned.lower()
-        if key not in seen:
-            seen.add(key)
-            queries.append(cleaned)
+        if key in seen:
+            continue
+        seen.add(key)
+        queries.append(cleaned)
 
     return queries
 
@@ -70,7 +91,7 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
     if not topic or not topic.strip():
         raise ValueError("Topic must not be empty.")
 
-    prompt = PROMPT_TEMPLATE.format(topic=topic.strip())
+    prompt = Query_Generator_Prompt.format(topic=topic.strip())
     last_error: Optional[Exception] = None
 
     for _attempt in range(1, retries + 1):
@@ -82,6 +103,15 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
             text = response.text or ""
             queries = _parse_queries(text)
             if queries:
+                update_workflow_state(
+                    {
+                        "topic": topic.strip(),
+                        "search_queries": [q for q in queries if isinstance(q, str) and q.strip()],
+                        "current_agent": "query_planning",
+                        "status": "query_planning_complete",
+                        "errors": [],
+                    }
+                )
                 return queries
             last_error = ValueError("LLM returned no parsable queries.")
         except Exception as e:

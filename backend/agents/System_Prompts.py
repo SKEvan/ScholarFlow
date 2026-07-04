@@ -28,3 +28,27 @@ Return ONLY valid JSON in the following format:
   ]
 }}
 """
+
+Summary_Prompt = """
+You are an academic research assistant.
+
+Using only the paper abstract, generate a concise summary in valid JSON.
+
+Return exactly this JSON shape:
+{{
+    "title": "...",
+    "authors": ["..."],
+    "research_objective": "...",
+    "research_problem": "...",
+    "main_findings": "..."
+}}
+
+Rules:
+- Keep the wording short and factual.
+- Do not add extra keys.
+- If a field is unclear, use "Not stated".
+
+Paper title: {title}
+Authors: {authors}
+Abstract: {abstract}
+"""

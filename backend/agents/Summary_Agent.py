@@ -1,6 +1,10 @@
-"""Summary papers for the top-cited results and save them to workflow state."""
+"""
+Agent 3: Summary Agent
+This agent summarizes the top-cited papers from the search results using Gemini.
+"""
 
 from __future__ import annotations
+from System_Prompts import Summary_Prompt
 
 import json
 import os
@@ -25,29 +29,7 @@ MAX_SUMMARY_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-SUMMARY_PROMPT = """
-You are an academic research assistant.
-
-Using only the paper abstract, generate a concise summary in valid JSON.
-
-Return exactly this JSON shape:
-{{
-    "title": "...",
-    "authors": ["..."],
-    "research_objective": "...",
-    "research_problem": "...",
-    "main_findings": "..."
-}}
-
-Rules:
-- Keep the wording short and factual.
-- Do not add extra keys.
-- If a field is unclear, use "Not stated".
-
-Paper title: {title}
-Authors: {authors}
-Abstract: {abstract}
-"""
+SUMMARY_PROMPT = Summary_Prompt  
 
 
 def _extract_json(text: str) -> Dict:

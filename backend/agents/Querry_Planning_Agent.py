@@ -94,7 +94,7 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
     prompt = Query_Generator_Prompt.format(topic=topic.strip())
     last_error: Optional[Exception] = None
 
-    for _attempt in range(1, retries + 1):
+    for _ in range(1, retries + 1):
         try:
             response = client.models.generate_content(
                 model=MODEL_NAME,
@@ -106,7 +106,7 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
                 update_workflow_state(
                     {
                         "topic": topic.strip(),
-                        "search_queries": [q for q in queries if isinstance(q, str) and q.strip()],
+                        "search_queries": queries,
                         "current_agent": "query_planning",
                         "status": "query_planning_complete",
                         "errors": [],

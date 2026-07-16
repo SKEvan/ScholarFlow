@@ -103,6 +103,7 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
             text = response.text or ""
             queries = _parse_queries(text)
             if queries:
+                # JSON state update: persist the generated topic and queries to workflow.json.
                 update_workflow_state(
                     {
                         "topic": topic.strip(),

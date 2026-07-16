@@ -7,7 +7,54 @@ Every agent receives the current state, updates the fields it is
 responsible for, and returns the updated state.
 """
 
-from typing import TypedDict, List, Dict, Optional
+from typing import TypedDict, List, Dict, Any
+
+
+class Paper(TypedDict, total=False):
+    title: str
+    authors: List[str]
+    abstract: str
+    year: int
+    doi: str
+    paper_url: str
+    doi_url: str
+    pdf_url: str
+    citations: int
+    source: str
+
+
+class Summary(TypedDict, total=False):
+    title: str
+    authors: List[str]
+    research_objective: str
+    research_problem: str
+    main_findings: str
+
+
+class ComparisonGroup(TypedDict, total=False):
+    theme: str
+    papers: List[str]
+    common_objectives: List[str]
+    common_problems: List[str]
+    common_findings: List[str]
+    differences: List[str]
+    unique_contributions: List[str]
+
+
+class ComparisonState(TypedDict, total=False):
+    groups: List[ComparisonGroup]
+
+
+class LiteratureReviewSection(TypedDict, total=False):
+    heading: str
+    paragraph: str
+    papers: List[str]
+
+
+class LiteratureReviewStatePayload(TypedDict, total=False):
+    title: str
+    outline: List[str]
+    sections: List[LiteratureReviewSection]
 
 
 class LiteratureReviewState(TypedDict):
@@ -31,7 +78,7 @@ class LiteratureReviewState(TypedDict):
     # Search Agent
     # -------------------------
 
-    papers: List[Dict]
+    papers: List[Paper]
 
     # Example paper structure:
     #
@@ -48,7 +95,7 @@ class LiteratureReviewState(TypedDict):
     # Summary Agent
     # -------------------------
 
-    summaries: List[Dict]
+    summaries: List[Summary]
 
     # Example summary:
     #
@@ -65,25 +112,25 @@ class LiteratureReviewState(TypedDict):
     # Comparison Agent
     # -------------------------
 
-    comparison: Optional[str]
+    comparison: ComparisonState
 
     # -------------------------
     # Research Gap Agent
     # -------------------------
 
-    research_gaps: Optional[str]
+    research_gaps: Dict[str, Any]
 
     # -------------------------
     # Literature Review Writer
     # -------------------------
 
-    literature_review: Optional[str]
+    literature_review: LiteratureReviewStatePayload
 
     # -------------------------
     # Validation Agent
     # -------------------------
 
-    validation_report: Optional[str]
+    validation_report: Dict[str, Any]
 
     validation_passed: bool
 

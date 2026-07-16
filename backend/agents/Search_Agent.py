@@ -187,6 +187,7 @@ def run_search_from_state() -> List[Dict]:
             errors.append(f"SearchAgent: query '{query}' failed: {e}")
 
     unique_papers = deduplicate_papers(all_papers)
+    # JSON state update: persist the search results to workflow.json.
     update_workflow_state(
         {
             "search_queries": queries,

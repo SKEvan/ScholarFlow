@@ -13,6 +13,7 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 from google import genai
 from workflow_state import load_workflow_state, update_workflow_state
+from System_Prompts import COMPARISON_PROMPT
 
 load_dotenv()
 
@@ -25,37 +26,7 @@ MAX_COMPARISON_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-COMPARISON_PROMPT = """
-You are an academic research assistant.
-
-Given the paper summaries below, group related papers by theme.
-
-Write your answer naturally if needed, but include one JSON object that follows this structure.
-
-Return exactly this shape:
-{
-  "groups": [
-    {
-      "theme": "...",
-      "papers": ["...", "..."],
-      "common_objectives": ["...", "..."],
-      "common_problems": ["...", "..."],
-      "common_findings": ["...", "..."],
-      "differences": ["...", "..."],
-      "unique_contributions": ["...", "..."]
-    }
-  ]
-}
-
-Rules:
-- Use only the provided summaries.
-- Keep statements short and factual.
-- Every field must be a list except "theme".
-- If something is unclear, use "Not stated".
-
-Summaries JSON:
-{summaries_json}
-"""
+COMPARISON_PROMPT = COMPARISON_PROMPT
 
 
 def _extract_json(text: str) -> Dict:
@@ -79,11 +50,9 @@ def _extract_json(text: str) -> Dict:
 	return data if isinstance(data, dict) else {}
 
 
-def run_comparison_from_state() -> Dict:
-	state = load_workflow_state()
-	summaries = state.get("summaries") or []
+def run_comparison_from_summaries(summaries: list[Dict], persist: bool = True) -> Dict:
 	if not summaries:
-		raise ValueError("No summaries found in workflow.json. Run Summary_Agent.py first.")
+		raise ValueError("No summaries found. Run Summary_Agent.py first.")
 
 	prompt = COMPARISON_PROMPT.format(
 		summaries_json=json.dumps(summaries, ensure_ascii=False, indent=2)
@@ -108,14 +77,24 @@ def run_comparison_from_state() -> Dict:
 		raise RuntimeError(last_error or "Gemini comparison failed.")
 
 	comparison = {"groups": data.get("groups", [])}
-	update_workflow_state(
-		{
-			"comparison": comparison,
-			"current_agent": "comparison",
-			"status": "comparison_complete",
-		}
-	)
+	if persist:
+		# JSON state update: persist the comparison payload to workflow.json.
+		update_workflow_state(
+			{
+				"comparison": comparison,
+				"current_agent": "comparison",
+				"status": "comparison_complete",
+			}
+		)
 	return comparison
+
+
+def run_comparison_from_state() -> Dict:
+	state = load_workflow_state()
+	summaries = state.get("summaries") or []
+	if not summaries:
+		raise ValueError("No summaries found in workflow.json. Run Summary_Agent.py first.")
+	return run_comparison_from_summaries(summaries, persist=True)
 
 
 if __name__ == "__main__":

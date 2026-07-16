@@ -98,9 +98,7 @@ def _summarize_paper(paper: Dict) -> Dict:
     }
 
 
-def run_summary_from_state() -> List[Dict]:
-    state = load_workflow_state()
-    papers = state.get("papers") or []
+def run_summary_from_papers(papers: List[Dict], persist: bool = True) -> List[Dict]:
     top_papers = sorted(
         [paper for paper in papers if paper.get("title") and paper.get("abstract")],
         key=lambda paper: paper.get("citations", 0) or 0,
@@ -108,10 +106,10 @@ def run_summary_from_state() -> List[Dict]:
     )[:TOP_PAPERS]
 
     if not top_papers:
-        raise ValueError("No papers with abstracts found in workflow.json.")
+        raise ValueError("No papers with abstracts found.")
 
     summaries: List[Dict] = []
-    errors = list(state.get("errors") or [])
+    errors: List[str] = []
 
     for paper in top_papers:
         try:
@@ -119,15 +117,23 @@ def run_summary_from_state() -> List[Dict]:
         except Exception as exc:
             errors.append(f"SummaryAgent: paper '{paper.get('title', '')}' failed: {exc}")
 
-    update_workflow_state(
-        {
-            "summaries": summaries,
-            "current_agent": "summary",
-            "status": "summary_complete" if summaries else "summary_failed",
-            "errors": errors,
-        }
-    )
+    if persist:
+        # JSON state update: mirror the generated summaries into workflow.json.
+        update_workflow_state(
+            {
+                "summaries": summaries,
+                "current_agent": "summary",
+                "status": "summary_complete" if summaries else "summary_failed",
+                "errors": errors,
+            }
+        )
     return summaries
+
+
+def run_summary_from_state() -> List[Dict]:
+    state = load_workflow_state()
+    papers = state.get("papers") or []
+    return run_summary_from_papers(papers, persist=True)
 
 
 if __name__ == "__main__":

@@ -53,6 +53,39 @@ Authors: {authors}
 Abstract: {abstract}
 """
 
+COMPARISON_PROMPT = """
+You are an academic research assistant.
+
+Given the paper summaries below, group related papers by theme.
+
+Write your answer naturally if needed, but include one JSON object that follows this structure.
+
+Return exactly this shape:
+{
+  "groups": [
+    {
+      "theme": "...",
+      "papers": ["...", "..."],
+      "common_objectives": ["...", "..."],
+      "common_problems": ["...", "..."],
+      "common_findings": ["...", "..."],
+      "differences": ["...", "..."],
+      "unique_contributions": ["...", "..."]
+    }
+  ]
+}
+
+Rules:
+- Use only the provided summaries.
+- Keep statements short and factual.
+- Every field must be a list except "theme".
+- If something is unclear, use "Not stated".
+
+Summaries JSON:
+{summaries_json}
+"""
+
+
 LITERATURE_REVIEW_PROMPT = """
 You are an academic research assistant.
 
@@ -60,15 +93,36 @@ Write a concise literature review for the research topic below using the paper s
 
 Rules:
 - Use only the provided topic, summaries, and comparison.
-- Include a short numbered outline before the literature review.
-- Keep the outline to exactly 4 short points.
-- Make each outline point map to one of the major comparison themes.
-- Then write the literature review in clear academic prose.
-- Keep both sections short and focused.
-- Mention the main themes, the shared direction of the literature, and the main gaps or tensions.
-- Use simple text headings like "Outline" and "Literature Review".
-- Number the outline points as 1., 2., 3., and 4.
-- Do not add extra JSON.
+- Return ONLY valid JSON.
+- Keep the structure exactly as requested.
+- Use short, factual statements.
+- Use paper titles in the "papers" lists.
+
+Return this JSON shape:
+{{
+  "title": "Literature Review",
+  "outline": [
+    "...",
+    "...",
+    "...",
+    "..."
+  ],
+  "sections": [
+    {{
+      "heading": "...",
+      "paragraph": "...",
+      "papers": ["...", "..."]
+    }}
+  ]
+}}
+
+Required structure:
+- "title" must be "Literature Review".
+- "outline" must contain exactly 4 short points.
+- "sections" must contain exactly 4 sections.
+- Each section must have "heading", "paragraph", and "papers".
+- Each "papers" list should contain the paper titles most relevant to that section.
+- Cover these themes across the four sections: military applications, counter-drone technologies, AI and targeting, and ethics/legal governance.
 
 Topic:
 {topic}

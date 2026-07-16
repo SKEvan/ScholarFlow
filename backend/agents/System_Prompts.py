@@ -52,3 +52,30 @@ Paper title: {title}
 Authors: {authors}
 Abstract: {abstract}
 """
+
+LITERATURE_REVIEW_PROMPT = """
+You are an academic research assistant.
+
+Write a concise literature review for the research topic below using the paper summaries and comparison themes.
+
+Rules:
+- Use only the provided topic, summaries, and comparison.
+- Include a short numbered outline before the literature review.
+- Keep the outline to exactly 4 short points.
+- Make each outline point map to one of the major comparison themes.
+- Then write the literature review in clear academic prose.
+- Keep both sections short and focused.
+- Mention the main themes, the shared direction of the literature, and the main gaps or tensions.
+- Use simple text headings like "Outline" and "Literature Review".
+- Number the outline points as 1., 2., 3., and 4.
+- Do not add extra JSON.
+
+Topic:
+{topic}
+
+Comparison JSON:
+{comparison_json}
+
+Summaries JSON:
+{summaries_json}
+"""

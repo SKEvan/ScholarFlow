@@ -5,6 +5,7 @@ from typing import Any, Dict, List, cast
 from backend.agents.Comparison_Agent import run_comparison_from_summaries
 from backend.agents.Literature_Review_Agent import run_literature_review_from_payload
 from backend.agents.Querry_Planning_Agent import generate_search_queries
+from backend.agents.Research_Gap_Agent import run_research_gap_from_payload
 from backend.agents.Search_Agent import deduplicate_papers, search_papers_for_query
 from backend.agents.Summary_Agent import run_summary_from_papers
 from backend.agents.graph.state import (
@@ -166,11 +167,58 @@ def comparison_agent(state: LiteratureReviewState) -> LiteratureReviewState:
     return state
 
 
+def research_gap_agent(state: LiteratureReviewState) -> LiteratureReviewState:
+    """LangGraph node: reads state['summaries'] and state['comparison'], writes state['research_gaps']."""
+    errors = list(state.get("errors", []))
+    summaries = cast(List[Summary], state.get("summaries") or [])
+    comparison = state.get("comparison")
+
+    if not summaries:
+        errors.append("ResearchGapAgent: no summaries provided.")
+        state["errors"] = errors
+        state["current_agent"] = "research_gap"
+        state["status"] = "research_gap_failed"
+        # LangGraph state update: clear research gaps in memory when the node cannot run.
+        state["research_gaps"] = cast(Any, {})
+        _sync_workflow_state(state)
+        return state
+
+    if not comparison:
+        errors.append("ResearchGapAgent: no comparison provided.")
+        state["errors"] = errors
+        state["current_agent"] = "research_gap"
+        state["status"] = "research_gap_failed"
+        # LangGraph state update: clear research gaps in memory when the node cannot run.
+        state["research_gaps"] = cast(Any, {})
+        _sync_workflow_state(state)
+        return state
+
+    try:
+        # LangGraph state update: compute research gaps in memory without touching workflow.json.
+        research_gaps = run_research_gap_from_payload(
+            cast(List[Dict[str, Any]], summaries),
+            cast(Dict[str, Any], comparison),
+            persist=False,
+        )
+        state["research_gaps"] = research_gaps
+        state["current_agent"] = "research_gap"
+        state["status"] = "research_gap_complete"
+    except Exception as e:
+        errors.append(f"ResearchGapAgent: {e}")
+        state["errors"] = errors
+        state["current_agent"] = "research_gap"
+        state["status"] = "research_gap_failed"
+
+    _sync_workflow_state(state)
+    return state
+
+
 def literature_review_agent(state: LiteratureReviewState) -> LiteratureReviewState:
     """LangGraph node: reads state['topic'] and state['comparison'], writes state['literature_review']."""
     errors = list(state.get("errors", []))
     topic = state.get("topic") or ""
     comparison = state.get("comparison")
+    research_gaps = state.get("research_gaps")
     summaries = cast(List[Summary], state.get("summaries") or [])
 
     if not topic:
@@ -200,6 +248,7 @@ def literature_review_agent(state: LiteratureReviewState) -> LiteratureReviewSta
             run_literature_review_from_payload(
                 topic,
                 cast(Dict[str, Any], comparison),
+                cast(Dict[str, Any] | None, research_gaps),
                 cast(List[Dict[str, Any]], summaries),
                 persist=False,
             ),

@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 from google import genai
-from System_Prompts import Query_Generator_Prompt
+from System_Prompts import QUERY_GENERATOR_PROMPT
 from workflow_state import update_workflow_state
 
 # ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
     if not topic or not topic.strip():
         raise ValueError("Topic must not be empty.")
 
-    prompt = Query_Generator_Prompt.format(topic=topic.strip())
+    prompt = QUERY_GENERATOR_PROMPT.format(topic=topic.strip())
     last_error: Optional[Exception] = None
 
     for _ in range(1, retries + 1):

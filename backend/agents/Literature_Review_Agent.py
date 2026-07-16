@@ -53,6 +53,7 @@ def _extract_json(text: str) -> Dict[str, Any]:
 def run_literature_review_from_payload(
     topic: str,
     comparison: Dict[str, Any],
+    research_gaps: Dict[str, Any] | None,
     summaries: list[Dict],
     persist: bool = True,
 ) -> Dict[str, Any]:
@@ -65,6 +66,7 @@ def run_literature_review_from_payload(
     prompt = LITERATURE_REVIEW_PROMPT.format(
         topic=topic,
         comparison_json=_format_payload(comparison),
+        research_gaps_json=_format_payload(research_gaps or {}),
         summaries_json=_format_payload(summaries),
     )
 
@@ -102,6 +104,7 @@ def run_literature_review_from_state() -> Dict[str, Any]:
     state = load_workflow_state()
     topic = (state.get("topic") or "").strip()
     comparison = state.get("comparison")
+    research_gaps = state.get("research_gaps")
     summaries = state.get("summaries") or []
 
     if not topic:
@@ -109,7 +112,7 @@ def run_literature_review_from_state() -> Dict[str, Any]:
     if not comparison:
         raise ValueError("No comparison found in workflow.json. Run Comparison_Agent.py first.")
 
-    return run_literature_review_from_payload(topic, comparison, summaries, persist=True)
+    return run_literature_review_from_payload(topic, comparison, research_gaps, summaries, persist=True)
 
 
 if __name__ == "__main__":

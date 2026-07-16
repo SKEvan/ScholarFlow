@@ -26,9 +26,6 @@ MAX_COMPARISON_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-COMPARISON_PROMPT = COMPARISON_PROMPT
-
-
 def _extract_json(text: str) -> Dict:
 	cleaned = text.strip()
 	if cleaned.startswith("```"):

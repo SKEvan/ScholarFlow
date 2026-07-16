@@ -4,7 +4,7 @@ This agent summarizes the top-cited papers from the search results using Gemini.
 """
 
 from __future__ import annotations
-from System_Prompts import Summary_Prompt
+from System_Prompts import SUMMARY_PROMPT
 
 import json
 import os
@@ -27,9 +27,6 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 TOP_PAPERS = int(os.getenv("TOP_SUMMARY_PAPERS", "5"))
 MAX_SUMMARY_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
-
-
-SUMMARY_PROMPT = Summary_Prompt  
 
 
 def _extract_json(text: str) -> Dict:

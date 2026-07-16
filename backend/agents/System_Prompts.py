@@ -1,6 +1,6 @@
 #System Prompts of all the Agents in the Multi Agent System
 
-Query_Generator_Prompt = """
+QUERY_GENERATOR_PROMPT = """
 You are an academic research assistant.
 
 Generate exactly 5 distinct, high-quality academic search queries for the given research topic.
@@ -29,7 +29,7 @@ Return ONLY valid JSON in the following format:
 }}
 """
 
-Summary_Prompt = """
+SUMMARY_PROMPT = """
 You are an academic research assistant.
 
 Using only the paper abstract, generate a concise summary in valid JSON.
@@ -61,9 +61,9 @@ Given the paper summaries below, group related papers by theme.
 Write your answer naturally if needed, but include one JSON object that follows this structure.
 
 Return exactly this shape:
-{
+{{
   "groups": [
-    {
+    {{
       "theme": "...",
       "papers": ["...", "..."],
       "common_objectives": ["...", "..."],
@@ -71,9 +71,9 @@ Return exactly this shape:
       "common_findings": ["...", "..."],
       "differences": ["...", "..."],
       "unique_contributions": ["...", "..."]
-    }
+    }}
   ]
-}
+}}
 
 Rules:
 - Use only the provided summaries.
@@ -86,13 +86,45 @@ Summaries JSON:
 """
 
 
+RESEARCH_GAP_PROMPT = """
+You are an academic research assistant.
+
+Given the paper summaries and comparison themes below, identify clear research gaps.
+
+Return only valid JSON in exactly this shape:
+{{
+  "research_gaps": [
+    {{
+      "theme": "...",
+      "gap": "...",
+      "evidence": ["...", "..."],
+      "future_directions": ["...", "..."],
+      "impact": "..."
+    }}
+  ]
+}}
+
+Rules:
+- Use only the provided summaries and comparison.
+- Keep statements short and factual.
+- If something is unclear, use "Not stated".
+- Return at least 3 gaps if possible.
+
+Comparison JSON:
+{comparison_json}
+
+Summaries JSON:
+{summaries_json}
+"""
+
+
 LITERATURE_REVIEW_PROMPT = """
 You are an academic research assistant.
 
 Write a concise literature review for the research topic below using the paper summaries and comparison themes.
 
 Rules:
-- Use only the provided topic, summaries, and comparison.
+- Use only the provided topic, summaries, comparison, and research gaps.
 - Return ONLY valid JSON.
 - Keep the structure exactly as requested.
 - Use short, factual statements.
@@ -129,6 +161,9 @@ Topic:
 
 Comparison JSON:
 {comparison_json}
+
+Research Gaps JSON:
+{research_gaps_json}
 
 Summaries JSON:
 {summaries_json}

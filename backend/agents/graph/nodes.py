@@ -1,6 +1,20 @@
 """Shared LangGraph node functions for the literature review workflow."""
 
+from pathlib import Path
+import sys
 from typing import Any, Dict, List, cast
+
+from dotenv import load_dotenv
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+AGENTS_DIR = PROJECT_ROOT / "backend" / "agents"
+
+for path in (PROJECT_ROOT, AGENTS_DIR):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+load_dotenv(AGENTS_DIR / ".env")
 
 from backend.agents.Comparison_Agent import run_comparison_from_summaries
 from backend.agents.Literature_Review_Agent import run_literature_review_from_payload

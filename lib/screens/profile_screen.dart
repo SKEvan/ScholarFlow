@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -311,7 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppTheme.accentBlueSoft,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.1)),
       ),

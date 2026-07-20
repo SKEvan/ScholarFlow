@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -174,7 +175,7 @@ class _LandingScreenState extends State<LandingScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24.0),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color: AppTheme.borderSubtle, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withOpacity(0.04),
@@ -386,7 +387,7 @@ class _LandingScreenState extends State<LandingScreen> {
       width: width,
       height: 6,
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F4F6),
+        color: AppTheme.surfaceContainerMuted,
         borderRadius: BorderRadius.circular(3),
       ),
     );
@@ -489,7 +490,7 @@ class _LandingScreenState extends State<LandingScreen> {
           ],
         ),
         borderRadius: BorderRadius.circular(24.0),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color: AppTheme.borderSubtle, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withOpacity(0.04),

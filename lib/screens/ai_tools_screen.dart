@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme.dart';
 
 class AIToolsScreen extends StatefulWidget {
   const AIToolsScreen({super.key});
@@ -499,7 +500,7 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppTheme.accentBlueSoft,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.1)),
       ),

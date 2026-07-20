@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 
 class CreateFolderScreen extends StatefulWidget {
   const CreateFolderScreen({super.key});
@@ -10,15 +11,15 @@ class CreateFolderScreen extends StatefulWidget {
 class _CreateFolderScreenState extends State<CreateFolderScreen> {
   final TextEditingController _nameController = TextEditingController();
   
-  Color _selectedColor = const Color(0x0058be).withOpacity(1); // Default blue
+  Color _selectedColor = AppTheme.actionBlue; // Default blue
   IconData _selectedIcon = Icons.folder;
   bool _isCreating = false;
 
   final List<Color> _colors = [
-    const Color(0xFF0058BE), // Blue
-    const Color(0xFF98805D), // Gold/Brown
-    const Color(0xFFBA1A1A), // Red
-    const Color(0xFF000000), // Black
+    AppTheme.actionBlue, // Blue
+    AppTheme.folderGold, // Gold/Brown
+    AppTheme.folderRed, // Red
+    Colors.black, // Black
   ];
 
   final List<Map<String, dynamic>> _icons = [
@@ -35,19 +36,19 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
       'title': 'Machine Learning Basics',
       'papers': '12 Papers',
       'updated': 'Updated 2d ago',
-      'color': const Color(0xFF98805D),
+      'color': AppTheme.folderGold,
     },
     {
       'title': 'Climate Change Ethics',
       'papers': '5 Papers',
       'updated': 'Updated 5h ago',
-      'color': const Color(0xFF0058BE),
+      'color': AppTheme.actionBlue,
     },
     {
       'title': 'Thesis References',
       'papers': '28 Papers',
       'updated': 'Updated 1w ago',
-      'color': const Color(0xFFBA1A1A),
+      'color': AppTheme.folderRed,
     },
   ];
 

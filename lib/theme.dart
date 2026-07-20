@@ -14,6 +14,13 @@ class AppTheme {
   
   static const Color secondaryContainer = Color(0xFF2170E4);
   static const Color onSecondaryContainer = Color(0xFFFEFCFF);
+
+  // Shared semantic accents (used across screens)
+  static const Color accentBlueSoft = Color(0xFFEFF6FF);
+  static const Color borderSubtle = Color(0xFFE2E8F0);
+  static const Color surfaceContainerMuted = Color(0xFFF2F4F6);
+  static const Color folderGold = Color(0xFF98805D);
+  static const Color folderRed = Color(0xFFBA1A1A);
   
   static ThemeData get lightTheme {
     final base = ThemeData.light();

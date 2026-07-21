@@ -32,6 +32,10 @@ def _normalize_search_queries(value: Any) -> List[str]:
 def _default_state() -> Dict[str, Any]:
     return {
         "topic": "",
+        "user_query": "",
+        "router_start_node": "",
+        "router_end_node": "",
+        "router_reason": "",
         "search_queries": [],
         "papers": [],
         "summaries": [],

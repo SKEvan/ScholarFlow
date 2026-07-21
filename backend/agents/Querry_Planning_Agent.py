@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import re
 import json
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from google import genai
@@ -39,20 +39,24 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 
 
 
-def _parse_queries(raw_text: str) -> List[str]:
-    """Extract and deduplicate the queries array from JSON model output."""
+def _parse_query_payload(raw_text: str) -> tuple[str, List[str]]:
+    """Extract topic and deduplicated queries from JSON model output."""
 
     text = raw_text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
 
+    raw_topic = ""
     raw_queries: List[str] = []
 
     # Try full JSON object first.
     try:
         payload = json.loads(text)
         if isinstance(payload, dict):
+            maybe_topic = payload.get("topic", "")
+            if isinstance(maybe_topic, str):
+                raw_topic = maybe_topic.strip()
             maybe_queries = payload.get("queries", [])
             if isinstance(maybe_queries, list):
                 raw_queries = maybe_queries
@@ -65,6 +69,10 @@ def _parse_queries(raw_text: str) -> List[str]:
         if start != -1 and end != -1 and end > start:
             try:
                 payload = json.loads(text[start : end + 1])
+                if isinstance(payload, dict):
+                    maybe_topic = payload.get("topic", "")
+                    if isinstance(maybe_topic, str):
+                        raw_topic = maybe_topic.strip()
                 maybe_queries = payload.get("queries", []) if isinstance(payload, dict) else []
                 if isinstance(maybe_queries, list):
                     raw_queries = maybe_queries
@@ -83,15 +91,14 @@ def _parse_queries(raw_text: str) -> List[str]:
         seen.add(key)
         queries.append(cleaned)
 
-    return queries
+    return raw_topic, queries
 
 
-def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
-    """Call Gemini to turn a topic into a list of academic search queries."""
-    if not topic or not topic.strip():
-        raise ValueError("Topic must not be empty.")
-
-    prompt = QUERY_GENERATOR_PROMPT.format(topic=topic.strip())
+def generate_search_plan(user_query: str | None = None, retries: int = 3) -> Dict[str, Any]:
+    """Call Gemini to produce a normalized topic and academic search queries."""
+    prompt = QUERY_GENERATOR_PROMPT.format(
+        user_query=(user_query or "").strip(),
+    )
     last_error: Optional[Exception] = None
 
     for _ in range(1, retries + 1):
@@ -101,19 +108,20 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
                 contents=prompt,
             )
             text = response.text or ""
-            queries = _parse_queries(text)
+            parsed_topic, queries = _parse_query_payload(text)
             if queries:
+                final_topic = parsed_topic or topic.strip() or (user_query or "").strip()
                 # JSON state update: persist the generated topic and queries to workflow.json.
                 update_workflow_state(
                     {
-                        "topic": topic.strip(),
+                        "topic": final_topic,
                         "search_queries": queries,
                         "current_agent": "query_planning",
                         "status": "query_planning_complete",
                         "errors": [],
                     }
                 )
-                return queries
+                return {"topic": final_topic, "queries": queries}
             last_error = ValueError("LLM returned no parsable queries.")
         except Exception as e:
             last_error = e
@@ -121,6 +129,12 @@ def generate_search_queries(topic: str, retries: int = 3) -> List[str]:
     raise RuntimeError(
         f"Query Planning Agent failed after {retries} attempts: {last_error}"
     )
+
+
+def generate_search_queries(user_query: str | None = None, retries: int = 3) -> List[str]:
+    """Backward-compatible wrapper that returns only the query list."""
+    plan = generate_search_plan(user_query, retries=retries)
+    return list(plan.get("queries") or [])
 
 
 if __name__ == "__main__":

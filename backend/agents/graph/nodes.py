@@ -1,7 +1,7 @@
 """Shared LangGraph node functions for the literature review workflow."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, cast
 
 from dotenv import load_dotenv
@@ -16,9 +16,10 @@ for path in (PROJECT_ROOT, AGENTS_DIR):
 
 load_dotenv(AGENTS_DIR / ".env")
 
+from backend.agents.Router_Agent import generate_route
 from backend.agents.Comparison_Agent import run_comparison_from_summaries
 from backend.agents.Literature_Review_Agent import run_literature_review_from_payload
-from backend.agents.Querry_Planning_Agent import generate_search_queries
+from backend.agents.Querry_Planning_Agent import generate_search_plan
 from backend.agents.Research_Gap_Agent import run_research_gap_from_payload
 from backend.agents.Search_Agent import deduplicate_papers, search_papers_for_query
 from backend.agents.Summary_Agent import run_summary_from_papers
@@ -37,6 +38,10 @@ def _sync_workflow_state(state: LiteratureReviewState) -> None:
     update_workflow_state(
         {
             "topic": state.get("topic", ""),
+            "user_query": state.get("user_query", ""),
+            "router_start_node": state.get("router_start_node", ""),
+            "router_end_node": state.get("router_end_node", ""),
+            "router_reason": state.get("router_reason", ""),
             "search_queries": state.get("search_queries", []),
             "papers": state.get("papers", []),
             "summaries": state.get("summaries", []),
@@ -52,32 +57,80 @@ def _sync_workflow_state(state: LiteratureReviewState) -> None:
     )
 
 
-def query_planning_agent(state: LiteratureReviewState) -> LiteratureReviewState:
-    """LangGraph node: reads state['topic'], writes state['search_queries']."""
-    errors = list(state.get("errors", []))
-    topic = state.get("topic")
+def _clear_workflow_artifacts(state: LiteratureReviewState) -> None:
+    state["search_queries"] = []
+    state["papers"] = []
+    state["summaries"] = []
+    state["comparison"] = cast(ComparisonState, {})
+    state["research_gaps"] = cast(Any, {})
+    state["literature_review"] = cast(LiteratureReviewStatePayload, {})
+    state["validation_report"] = cast(Any, {})
+    state["validation_passed"] = False
+    state["errors"] = []
+    
+    
 
-    if not topic:
+def router_agent(user_query: str) -> LiteratureReviewState:
+    """LangGraph node: reads state['user_query'] , writes state['router_start_node'], state['router_end_node'], and state['router_reason']."""
+    start_node, end_node, reason = generate_route(user_query)
+
+    state = cast(LiteratureReviewState, {})
+
+    state["user_query"] = user_query
+    state["router_start_node"] = start_node
+    state["router_end_node"] = end_node
+    state["router_reason"] = reason
+    state["current_agent"] = "router"
+    state["status"] = "router_complete"
+
+    return state
+
+def query_planning_agent(state: LiteratureReviewState) -> LiteratureReviewState:
+    """LangGraph node: reads state['user_query'] and writes state['topic'] and state['search_queries']."""
+    errors = list(state.get("errors", []))
+    previous_topic = str(state.get("topic") or "").strip()
+    user_query = str(state.get("user_query") or "").strip()
+    # Keep state aligned to the latest request before planning runs.
+    if user_query:
+        state["topic"] = user_query
+
+    if not previous_topic and not user_query:
         errors.append("QueryPlanningAgent: missing topic")
         state["errors"] = errors
         state["current_agent"] = "query_planning"
         state["status"] = "query_planning_failed"
         # LangGraph state update: keep the in-memory graph state consistent on failure.
         state["search_queries"] = []
+        state["papers"] = []
         _sync_workflow_state(state)
         return state
 
     try:
-        queries = generate_search_queries(topic)
+        # Query planning owns topic extraction. If user_query is present, let the LLM infer topic from it.
+        plan = generate_search_plan(user_query)
+        queries = cast(List[str], plan.get("queries") or [])
+        planned_topic = str(plan.get("topic") or "").strip()
+
+        if planned_topic and previous_topic and planned_topic.lower() != previous_topic.lower():
+            _clear_workflow_artifacts(state)
+        elif planned_topic and not previous_topic:
+            _clear_workflow_artifacts(state)
+
         # LangGraph state update: write generated queries into the in-memory state.
         state["search_queries"] = queries
+        state["topic"] = planned_topic or previous_topic or user_query
         state["current_agent"] = "query_planning"
         state["status"] = "query_planning_complete"
     except Exception as e:
         errors.append(f"QueryPlanningAgent: {e}")
         state["errors"] = errors
         state["current_agent"] = "query_planning"
-        state["status"] = "query_planning_failed"
+        # Fallback for quota/rate-limit failures: keep the workflow usable with fresh state.
+        fallback_topic = user_query or previous_topic
+        state["topic"] = fallback_topic
+        state["search_queries"] = [fallback_topic] if fallback_topic else []
+        state["papers"] = []
+        state["status"] = "query_planning_complete" if state["search_queries"] else "query_planning_failed"
 
     _sync_workflow_state(state)
     return state

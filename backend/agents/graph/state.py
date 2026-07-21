@@ -67,6 +67,10 @@ class LiteratureReviewState(TypedDict):
     # -------------------------
 
     topic: str
+    user_query: str
+    router_start_node: str
+    router_end_node: str
+    router_reason: str
 
     # -------------------------
     # Query Planning Agent

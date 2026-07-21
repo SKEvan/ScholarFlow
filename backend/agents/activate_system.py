@@ -2,34 +2,32 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import sys
-
 from dotenv import load_dotenv
+from graph.nodes import router_agent
+from graph.workflow import build_langgraph_workflow
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-AGENTS_DIR = PROJECT_ROOT / "backend" / "agents"
+load_dotenv(".env")
 
-for path in (PROJECT_ROOT, AGENTS_DIR):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
-
-load_dotenv(AGENTS_DIR / ".env")
-
-from backend.agents.graph.workflow import run_langgraph_workflow_from_state
+#from backend.agents.graph.workflow import run_langgraph_workflow_from_state
 
 
 def main() -> None:
-    topic = input("Enter research topic: ").strip()
-    if not topic:
-        print("No topic provided. Workflow cancelled.")
-        return
+    print("Type a request to start or continue the workflow. Type 'exit' to quit.")
+    while True:
+        user_input = input("\nYour request: ").strip()
+        if not user_input:
+            print("No request provided. Please enter a request or type 'exit'.")
+            continue
+        if user_input.lower() in {"exit", "quit"}:
+            print("Workflow session ended.")
+            break
 
-    final_state = run_langgraph_workflow_from_state({"topic": topic})
-    status = final_state.get("status", "")
-    current_agent = final_state.get("current_agent", "")
-    print(f"LangGraph workflow complete: {status} ({current_agent})")
+        state = router_agent(user_input)
+        router_start_node = state["router_start_node"]
+        router_end_node = state["router_end_node"]
+        app = build_langgraph_workflow(router_start_node, router_end_node)
+        result = app.invoke(state)
 
 
 if __name__ == "__main__":

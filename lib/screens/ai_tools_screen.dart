@@ -448,9 +448,25 @@ class _AIToolsScreenState extends State<AIToolsScreen> {
   Widget _buildBentoCard(ThemeData theme, IconData icon, String title, String subtitle) {
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${title.replaceAll('\n', ' ')} is under development.')),
-        );
+        final t = title.replaceAll('\n', ' ');
+        // Route the user to the matching Stitch screen when one exists
+        String? route;
+        if (t.toLowerCase().contains('summary')) {
+          route = '/summarizer-review';
+        } else if (t.toLowerCase().contains('comparison') ||
+            t.toLowerCase().contains('gap')) {
+          route = '/comparison-gap';
+        } else if (t.toLowerCase().contains('literature') ||
+            t.toLowerCase().contains('review')) {
+          route = '/literature-review';
+        }
+        if (route != null) {
+          Navigator.of(context).pushNamed(route);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$t is under development.')),
+          );
+        }
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(

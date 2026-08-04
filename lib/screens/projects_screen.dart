@@ -95,10 +95,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.group),
-              title: const Text('Network'),
+              title: const Text('Collaboration'),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/network');
+                Navigator.of(context).pushNamed('/add-collaborator');
               },
             ),
             ListTile(
@@ -309,8 +309,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         _buildQuickActionBtn(
                           theme,
                           icon: Icons.group_add,
-                          label: 'Join Space',
-                          onTap: () => Navigator.of(context).pushNamed('/network'),
+                          label: 'Request Collab',
+                          onTap: () => Navigator.of(context).pushNamed('/add-collaborator'),
                         ),
                       ],
                     ),
@@ -390,10 +390,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         onTap: (index) {
           if (index == 0) {
             Navigator.of(context).pushReplacementNamed('/dashboard');
-          } else if (index == 2) {
-            Navigator.of(context).pushReplacementNamed('/network');
-          } else if (index == 3) {
-            Navigator.of(context).pushReplacementNamed('/ai-tools');
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -410,14 +406,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.folder_open),
             label: 'Projects',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Network',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Tools',
           ),
         ],
       ),

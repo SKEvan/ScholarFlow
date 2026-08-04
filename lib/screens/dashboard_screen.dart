@@ -145,10 +145,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.group),
-              title: const Text('Network'),
+              title: const Text('Collaboration'),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/network');
+                Navigator.of(context).pushNamed('/add-collaborator');
               },
             ),
             ListTile(
@@ -298,10 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildQuickAction(
                     theme,
                     icon: Icons.groups,
-                    title: 'Collaborators',
+                          title: 'Collaboration',
                     bgColor: theme.colorScheme.surfaceContainerHigh,
                     iconColor: theme.colorScheme.secondary,
-                    onTap: () => Navigator.of(context).pushNamed('/network'),
+                          onTap: () => Navigator.of(context).pushNamed('/add-collaborator'),
                   ),
                 ],
               ),
@@ -373,10 +373,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onTap: (index) {
           if (index == 1) {
             Navigator.of(context).pushReplacementNamed('/projects');
-          } else if (index == 2) {
-            Navigator.of(context).pushReplacementNamed('/network');
-          } else if (index == 3) {
-            Navigator.of(context).pushReplacementNamed('/ai-tools');
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -393,14 +389,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.folder_open),
             label: 'Projects',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Network',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Tools',
           ),
         ],
       ),

@@ -274,8 +274,6 @@ class _ComparisonGapScreenState extends State<ComparisonGapScreen> {
             children: [
               _navItem(theme, Icons.dashboard_rounded, 'Home', false, () => Navigator.of(context).pushReplacementNamed('/dashboard')),
               _navItem(theme, Icons.folder_open_rounded, 'Projects', false, () => Navigator.of(context).pushReplacementNamed('/projects')),
-              _navItem(theme, Icons.groups_rounded, 'Network', false, () => Navigator.of(context).pushReplacementNamed('/network')),
-              _navItem(theme, Icons.auto_awesome_rounded, 'Tools', true, null),
             ],
           ),
         ),

@@ -9,8 +9,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _activeTab = 3; // Profile active
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -208,51 +206,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 description: 'Real-time bias detection in high-frequency automated decision engines.',
                 progress: 0.40,
               ),
-              const SizedBox(height: 90), // Spacing for bottom navbar
+              const SizedBox(height: 24),
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _activeTab,
-        onTap: (index) {
-          setState(() {
-            _activeTab = index;
-          });
-          if (index == 0) {
-            Navigator.of(context).pushReplacementNamed('/dashboard');
-          } else if (index == 1) {
-            Navigator.of(context).pushReplacementNamed('/projects');
-          } else if (index == 2) {
-            Navigator.of(context).pushReplacementNamed('/network');
-          } else if (index == 3) {
-            Navigator.of(context).pushReplacementNamed('/ai-tools');
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: theme.colorScheme.secondary,
-        unselectedItemColor: theme.colorScheme.outline,
-        selectedLabelStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 10),
-        unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(fontSize: 10),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder_open),
-            label: 'Projects',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Network',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

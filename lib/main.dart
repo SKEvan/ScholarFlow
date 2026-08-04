@@ -10,9 +10,7 @@ import 'screens/profile_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/new_note_screen.dart';
 import 'screens/add_collaborator_screen.dart';
-import 'screens/network_screen.dart';
 import 'screens/upload_paper_screen.dart';
-import 'screens/ai_tools_screen.dart';
 import 'screens/search_results_screen.dart';
 import 'screens/projects_screen.dart';
 import 'screens/project_details_screen.dart';
@@ -51,9 +49,7 @@ class ScholarFlowApp extends StatelessWidget {
             '/forgot-password': (context) => const ForgotPasswordScreen(),
             '/new-note': (context) => const NewNoteScreen(),
             '/add-collaborator': (context) => const AddCollaboratorScreen(),
-            '/network': (context) => const NetworkScreen(),
             '/upload-paper': (context) => const UploadPaperScreen(),
-            '/ai-tools': (context) => const AIToolsScreen(),
             '/search-results': (context) => const SearchResultsScreen(),
             '/projects': (context) => const ProjectsScreen(),
             '/project-details': (context) => const ProjectDetailsScreen(),

@@ -10,7 +10,54 @@ class ProjectDetailsScreen extends StatefulWidget {
 
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   final int _activeTab = 1; // Projects active
+  final TextEditingController _aiRequestController = TextEditingController();
+  final FocusNode _aiRequestFocusNode = FocusNode();
+  final List<Map<String, dynamic>> _aiTools = [
+    {
+      'icon': Icons.summarize,
+      'title': 'Generate Summary',
+      'subtitle': 'Synthesize key findings across partners.',
+      'choices': ['General Summary', 'Key insights', 'Critical Analysis'],
+    },
+    {
+      'icon': Icons.compare_arrows,
+      'title': 'Comparison Gap',
+      'subtitle': 'Analyze divergent arguments in drafts.',
+      'choices': [
+        'Overall Comparison',
+        'Similarity and Difference',
+        'Strength and Limitation',
+      ],
+    },
+    {
+      'icon': Icons.search,
+      'title': 'Research Gap',
+      'subtitle': 'Identify unexplored domains in collection.',
+      'choices': [
+        'Research Gaps',
+        'Future Research Opportunities',
+        'Strengths and Limitations',
+      ],
+    },
+    {
+      'icon': Icons.menu_book,
+      'title': 'Literature Review',
+      'subtitle': 'Automated bibliography synthesis.',
+      'choices': ['Narrative Review', 'Theme based Review', 'Critical Review'],
+    },
+  ];
+  String _selectedAiOutput = 'No AI output selected yet.';
+  String _selectedAiTool = 'Generate Summary';
+  String _selectedAiChoice = 'General Summary';
+  String _selectedAiPrompt = 'Enter what you want the AI to focus on.';
   String _projectTitle = 'Ethical AI Framework';
+
+  @override
+  void dispose() {
+    _aiRequestController.dispose();
+    _aiRequestFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -237,6 +284,74 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // Collaboration Request Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondaryContainer.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.person_add_alt_1,
+                          size: 18,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Collaboration Request',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Invite collaborators or request help.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/add-collaborator');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          minimumSize: const Size(0, 36),
+                        ),
+                        child: const Text('Request'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
 
               // Research Papers Section
               Padding(
@@ -385,6 +500,38 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 40),
+
+              // AI Collaboration Tools
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'AI Collaboration Tools',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.05,
+                  children: _aiTools
+                      .map((tool) => _buildAIToolTile(theme, tool))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildAiOutputCard(theme),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -402,10 +549,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         onTap: (index) {
           if (index == 0) {
             Navigator.of(context).pushReplacementNamed('/dashboard');
-          } else if (index == 2) {
-            Navigator.of(context).pushReplacementNamed('/network');
-          } else if (index == 3) {
-            Navigator.of(context).pushReplacementNamed('/ai-tools');
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -422,14 +565,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.folder_open),
             label: 'Projects',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Network',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Tools',
           ),
         ],
       ),
@@ -498,6 +633,247 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAIToolTile(ThemeData theme, Map<String, dynamic> tool) {
+    return InkWell(
+      onTap: () {
+        _showAiOutputChooser(theme, tool);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                tool['icon'] as IconData,
+                color: theme.colorScheme.secondary,
+                size: 22,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              tool['title'] as String,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              tool['subtitle'] as String,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 11,
+                color: theme.colorScheme.outline,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiOutputCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Selected AI Output',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tool: $_selectedAiTool',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Output type: $_selectedAiChoice',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _selectedAiOutput,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _selectedAiPrompt,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAiOutputChooser(ThemeData theme, Map<String, dynamic> tool) {
+    final String toolTitle = tool['title'] as String;
+    final List<String> choices = List<String>.from(tool['choices'] as List);
+    final TextEditingController promptController = TextEditingController(
+      text: _aiRequestController.text,
+    );
+    String activeChoice = _selectedAiChoice;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            void clearChoiceSelection() {
+              if (activeChoice.isNotEmpty) {
+                setSheetState(() {
+                  activeChoice = '';
+                });
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      toolTitle,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pick an output type and describe what you want it to focus on.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: choices.map((choice) {
+                        return ChoiceChip(
+                          label: Text(choice),
+                          selected: activeChoice == choice,
+                          onSelected: (_) {
+                            setSheetState(() {
+                              activeChoice = choice;
+                              promptController.clear();
+                              _aiRequestController.clear();
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Focus(
+                      focusNode: _aiRequestFocusNode,
+                      onFocusChange: (hasFocus) {
+                        if (hasFocus) {
+                          clearChoiceSelection();
+                        }
+                      },
+                      child: TextField(
+                        controller: promptController,
+                        minLines: 2,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'What should the AI focus on?',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final promptText = promptController.text.trim();
+                          setState(() {
+                            _selectedAiTool = toolTitle;
+                            _selectedAiChoice = activeChoice.isEmpty ? 'Custom' : activeChoice;
+                            _selectedAiPrompt = promptText.isEmpty
+                                ? 'No prompt provided.'
+                                : promptText;
+                            _selectedAiOutput =
+                              'Placeholder $toolTitle output for "$_selectedAiChoice" will appear here once the backend is connected.';
+                            _aiRequestController.text = promptText;
+                          });
+                          Navigator.of(sheetContext).pop();
+                        },
+                        child: const Text('Update Project Output'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -96,8 +96,10 @@ def _parse_query_payload(raw_text: str) -> tuple[str, List[str]]:
 
 def generate_search_plan(user_query: str | None = None, retries: int = 3) -> Dict[str, Any]:
     """Call Gemini to produce a normalized topic and academic search queries."""
+    topic = (user_query or "").strip()
     prompt = QUERY_GENERATOR_PROMPT.format(
         user_query=(user_query or "").strip(),
+        topic=(user_query or "").strip(),
     )
     last_error: Optional[Exception] = None
 
@@ -110,11 +112,12 @@ def generate_search_plan(user_query: str | None = None, retries: int = 3) -> Dic
             text = response.text or ""
             parsed_topic, queries = _parse_query_payload(text)
             if queries:
-                final_topic = parsed_topic or topic.strip() or (user_query or "").strip()
+                final_topic = parsed_topic or topic
                 # JSON state update: persist the generated topic and queries to workflow.json.
                 update_workflow_state(
                     {
                         "topic": final_topic,
+                        "user_query": (user_query or "").strip(),
                         "search_queries": queries,
                         "current_agent": "query_planning",
                         "status": "query_planning_complete",

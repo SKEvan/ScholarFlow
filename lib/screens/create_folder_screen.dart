@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/backend_api.dart';
 import '../theme.dart';
 
 class CreateFolderScreen extends StatefulWidget {
@@ -59,9 +60,10 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
   }
 
   void _onCreateFolder() async {
-    if (_nameController.text.trim().isEmpty) {
+    final projectTitle = _nameController.text.trim();
+    if (projectTitle.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a folder name.')),
+        const SnackBar(content: Text('Please enter a project title.')),
       );
       return;
     }
@@ -70,17 +72,38 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
       _isCreating = true;
     });
 
-    // Simulate creation loader delay
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      final response = await BackendApi.researchProject(projectTitle);
 
-    if (mounted) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isCreating = false;
+      });
+
+      Navigator.of(context).pushReplacementNamed(
+        '/search-results',
+        arguments: {
+          'projectTitle': response['project'] is Map ? response['project']['title'] : projectTitle,
+          'searchQueries': response['search_queries'] ?? const [],
+          'papers': response['papers'] ?? const [],
+        },
+      );
+      return;
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _isCreating = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Folder "${_nameController.text}" created successfully!')),
+        SnackBar(content: Text('Project research failed: $error')),
       );
-      Navigator.of(context).pop();
+      return;
     }
   }
 
@@ -98,7 +121,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'New Folder',
+          'New Project',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
@@ -119,7 +142,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       children: [
                         // Folder Name Input
                         Text(
-                          'FOLDER NAME',
+                          'PROJECT TITLE',
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.outline,
                             fontSize: 11,
@@ -275,7 +298,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'EXISTING LIBRARIES',
+                              'EXISTING PROJECTS',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.outline,
                                 fontSize: 10,
@@ -436,7 +459,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Folders organize your papers for rapid retrieval.',
+                                      'Projects organize your papers for rapid retrieval.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
@@ -467,7 +490,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Creating library folder...',
+                          'Creating project...',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],

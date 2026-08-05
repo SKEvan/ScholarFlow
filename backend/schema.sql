@@ -47,15 +47,36 @@ CREATE TABLE public.collaboration_requests (
   CONSTRAINT collaboration_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.profiles(id),
   CONSTRAINT collaboration_requests_requested_to_fkey FOREIGN KEY (requested_to) REFERENCES public.profiles(id)
 );
-CREATE TABLE public.ai_outputs (
+CREATE TABLE public.version (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   project_id bigint,
   created_by bigint,
-  tool_type text,
-  output_type text,
-  prompt text,
+  snapshot_name text,
+  summary jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT ai_outputs_pkey PRIMARY KEY (id),
+  version_message text,
+  is_current boolean,
+  comparison jsonb,
+  research_gap jsonb,
+  literature_review jsonb NOT NULL,
+  papers jsonb,
+  CONSTRAINT version_pkey PRIMARY KEY (id),
   CONSTRAINT ai_outputs_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id),
   CONSTRAINT ai_outputs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.project_papers (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  project_id bigint,
+  title text,
+  authors text,
+  abstract text,
+  year numeric,
+  fetched_at timestamp with time zone NOT NULL DEFAULT now(),
+  doi text,
+  paper_url text,
+  doi_url text,
+  pdf_url text,
+  citations smallint,
+  CONSTRAINT project_papers_pkey PRIMARY KEY (id),
+  CONSTRAINT project_papers_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id)
 );

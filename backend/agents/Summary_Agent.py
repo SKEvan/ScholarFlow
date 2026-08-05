@@ -8,12 +8,13 @@ from System_Prompts import SUMMARY_PROMPT
 
 import json
 import os
-import re
-from typing import Dict, List, Optional
+import time
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from google import genai
 from workflow_state import load_workflow_state, update_workflow_state
+from agent_utils import extract_json, normalize_abstracts
 
 load_dotenv()
 
@@ -29,52 +30,32 @@ MAX_SUMMARY_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-def _extract_json(text: str) -> Dict:
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            return {}
-        try:
-            data = json.loads(cleaned[start : end + 1])
-        except json.JSONDecodeError:
-            return {}
-
-    return data if isinstance(data, dict) else {}
-
-
-def _normalize_authors(value) -> List[str]:
-    if isinstance(value, list):
-        return [str(author).strip() for author in value if str(author).strip()]
-    if isinstance(value, str):
-        cleaned = value.strip()
-        return [cleaned] if cleaned else []
-    return []
-
-
-def _summarize_paper(paper: Dict) -> Dict:
-    prompt = SUMMARY_PROMPT.format(
-        title=paper.get("title", ""),
-        authors=", ".join(paper.get("authors") or []),
-        abstract=paper.get("abstract", ""),
+def _build_prompt(abstracts: List[Dict[str, str]], desired_output_type: str) -> str:
+    return SUMMARY_PROMPT.format(
+        abstracts_json=json.dumps(abstracts, ensure_ascii=False, indent=2),
+        output_type=desired_output_type,
     )
 
-    data: Dict = {}
+
+def _run_summary_from_abstracts(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str,
+) -> Dict[str, Any]:
+    if not abstracts:
+        raise ValueError("No abstracts found. Provide paper abstracts first.")
+
+    output_type = (desired_output_type or "General Summary").strip() or "General Summary"
+    prompt = _build_prompt(abstracts, output_type)
+
+    data: Dict[str, Any] = {}
     last_error: Optional[Exception] = None
     for attempt in range(1, MAX_SUMMARY_RETRIES + 1):
         try:
             response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-            data = _extract_json(response.text or "")
-            if data:
+            data = extract_json(response.text or "")
+            if data.get("content") is not None:
                 break
-            last_error = ValueError("Gemini returned empty or unparsable JSON.")
+            last_error = ValueError("Gemini returned empty or invalid summary JSON.")
         except Exception as exc:
             last_error = exc
 
@@ -84,58 +65,50 @@ def _summarize_paper(paper: Dict) -> Dict:
             time.sleep(1.5 * attempt)
 
     if not data:
-        raise RuntimeError(last_error or "Gemini summary failed.")
+        raise RuntimeError(last_error or "Gemini summary generation failed.")
 
-    return {
-        "title": data.get("title") or paper.get("title", ""),
-        "authors": _normalize_authors(data.get("authors") or paper.get("authors", [])),
-        "research_objective": data.get("research_objective", "Not stated"),
-        "research_problem": data.get("research_problem", "Not stated"),
-        "main_findings": data.get("main_findings", "Not stated"),
-    }
+    data["tool"] = data.get("tool") or "summary"
+    data["output_type"] = output_type
+    data.setdefault("title", "Summary")
+    return data
 
 
-def run_summary_from_papers(papers: List[Dict], persist: bool = True) -> List[Dict]:
-    top_papers = sorted(
-        [paper for paper in papers if paper.get("title") and paper.get("abstract")],
-        key=lambda paper: paper.get("citations", 0) or 0,
-        reverse=True,
-    )[:TOP_PAPERS]
-
-    if not top_papers:
-        raise ValueError("No papers with abstracts found.")
-
-    summaries: List[Dict] = []
-    errors: List[str] = []
-
-    for paper in top_papers:
-        try:
-            summaries.append(_summarize_paper(paper))
-        except Exception as exc:
-            errors.append(f"SummaryAgent: paper '{paper.get('title', '')}' failed: {exc}")
+def run_summary_from_payload(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str = "General Summary",
+    persist: bool = True,
+) -> Dict[str, Any]:
+    result = _run_summary_from_abstracts(abstracts, desired_output_type)
 
     if persist:
-        # JSON state update: mirror the generated summaries into workflow.json.
+        # JSON state update: persist the direct summary response to workflow.json.
         update_workflow_state(
             {
-                "summaries": summaries,
+                "abstracts": abstracts,
+                "desired_output_type": desired_output_type,
+                "summary": result,
                 "current_agent": "summary",
-                "status": "summary_complete" if summaries else "summary_failed",
-                "errors": errors,
+                "status": "summary_complete",
             }
         )
-    return summaries
+    return result
 
 
-def run_summary_from_state() -> List[Dict]:
+def run_summary_from_papers(papers: List[Dict], persist: bool = True) -> Dict[str, Any]:
+    abstracts = normalize_abstracts(papers)
+    return run_summary_from_payload(abstracts, persist=persist)
+
+
+def run_summary_from_state() -> Dict[str, Any]:
     state = load_workflow_state()
-    papers = state.get("papers") or []
-    return run_summary_from_papers(papers, persist=True)
+    abstracts = normalize_abstracts(state.get("abstracts") or state.get("papers") or [])
+    desired_output_type = state.get("desired_output_type") or "General Summary"
+    return run_summary_from_payload(abstracts, desired_output_type, persist=True)
 
 
 if __name__ == "__main__":
     try:
-        summaries = run_summary_from_state()
-        print(f"Generated {len(summaries)} summaries.")
+        summary = run_summary_from_state()
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
     except Exception as exc:
         print(f"\nError: {exc}")

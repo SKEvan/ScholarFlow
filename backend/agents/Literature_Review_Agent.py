@@ -8,12 +8,13 @@ import json
 import os
 import re
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from google import genai
 from workflow_state import load_workflow_state, update_workflow_state
 from System_Prompts import LITERATURE_REVIEW_PROMPT
+from agent_utils import extract_json, normalize_abstracts
 
 load_dotenv()
 
@@ -25,58 +26,31 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 MAX_LITERATURE_REVIEW_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-def _format_payload(value) -> str:
-    return json.dumps(value, ensure_ascii=False, indent=2)
 
-
-def _extract_json(text: str) -> Dict[str, Any]:
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            return {}
-        try:
-            data = json.loads(cleaned[start : end + 1])
-        except json.JSONDecodeError:
-            return {}
-
-    return data if isinstance(data, dict) else {}
-
-
-def run_literature_review_from_payload(
-    topic: str,
-    comparison: Dict[str, Any],
-    research_gaps: Dict[str, Any] | None,
-    summaries: list[Dict],
-    persist: bool = True,
-) -> Dict[str, Any]:
-    topic = (topic or "").strip()
-    if not topic:
-        raise ValueError("No topic found. Run Querry_Planning_Agent.py first.")
-    if not comparison:
-        raise ValueError("No comparison found. Run Comparison_Agent.py first.")
-
-    prompt = LITERATURE_REVIEW_PROMPT.format(
-        topic=topic,
-        comparison_json=_format_payload(comparison),
-        research_gaps_json=_format_payload(research_gaps or {}),
-        summaries_json=_format_payload(summaries),
+def _build_prompt(abstracts: List[Dict[str, str]], desired_output_type: str) -> str:
+    return LITERATURE_REVIEW_PROMPT.format(
+        abstracts_json=json.dumps(abstracts, ensure_ascii=False, indent=2),
+        output_type=desired_output_type,
     )
+
+
+def _run_literature_review_from_abstracts(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str,
+) -> Dict[str, Any]:
+    if not abstracts:
+        raise ValueError("No abstracts found. Provide paper abstracts first.")
+
+    output_type = (desired_output_type or "Narrative Review").strip() or "Narrative Review"
+    prompt = _build_prompt(abstracts, output_type)
 
     last_error: Optional[Exception] = None
     literature_review: Dict[str, Any] = {}
     for attempt in range(1, MAX_LITERATURE_REVIEW_RETRIES + 1):
         try:
             response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-            literature_review = _extract_json(response.text or "")
-            if literature_review:
+            literature_review = extract_json(response.text or "")
+            if literature_review.get("content") is not None:
                 break
             last_error = ValueError("Gemini returned empty or invalid literature review JSON.")
         except Exception as exc:
@@ -88,10 +62,26 @@ def run_literature_review_from_payload(
     if not literature_review:
         raise RuntimeError(last_error or "Gemini literature review failed.")
 
+    literature_review["tool"] = literature_review.get("tool") or "literature_review"
+    literature_review["output_type"] = output_type
+    literature_review.setdefault("title", "Literature Review")
+
+    return literature_review
+
+
+def run_literature_review_from_payload(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str = "Narrative Review",
+    persist: bool = True,
+) -> Dict[str, Any]:
+    literature_review = _run_literature_review_from_abstracts(abstracts, desired_output_type)
+
     if persist:
-        # JSON state update: mirror the generated literature review into workflow.json.
+        # JSON state update: persist the direct literature review response to workflow.json.
         update_workflow_state(
             {
+                "abstracts": abstracts,
+                "desired_output_type": desired_output_type,
                 "literature_review": literature_review,
                 "current_agent": "literature_review",
                 "status": "literature_review_complete",
@@ -102,17 +92,9 @@ def run_literature_review_from_payload(
 
 def run_literature_review_from_state() -> Dict[str, Any]:
     state = load_workflow_state()
-    topic = (state.get("topic") or "").strip()
-    comparison = state.get("comparison")
-    research_gaps = state.get("research_gaps")
-    summaries = state.get("summaries") or []
-
-    if not topic:
-        raise ValueError("No topic found in workflow.json. Run Querry_Planning_Agent.py first.")
-    if not comparison:
-        raise ValueError("No comparison found in workflow.json. Run Comparison_Agent.py first.")
-
-    return run_literature_review_from_payload(topic, comparison, research_gaps, summaries, persist=True)
+    abstracts = normalize_abstracts(state.get("abstracts") or state.get("papers") or [])
+    desired_output_type = state.get("desired_output_type") or "Narrative Review"
+    return run_literature_review_from_payload(abstracts, desired_output_type, persist=True)
 
 
 if __name__ == "__main__":

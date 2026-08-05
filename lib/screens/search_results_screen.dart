@@ -11,6 +11,7 @@ class SearchResultsScreen extends StatefulWidget {
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
   late TextEditingController _searchController;
   String _selectedTab = 'All';
+  bool _routeArgsLoaded = false;
   
   // Track active/inactive filter chips
   final Map<String, bool> _filters = {
@@ -19,7 +20,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     'Peer Reviewed': false,
   };
 
-  final List<Map<String, dynamic>> _papers = [
+  List<Map<String, dynamic>> _papers = [
     {
       'title': 'Quantum Entanglement in Macro Systems',
       'authors': 'Dr. Julian Vance, et al.',
@@ -55,8 +56,22 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as String?;
-    _searchController = TextEditingController(text: args ?? 'Quantum');
+    if (_routeArgsLoaded) {
+      return;
+    }
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      final projectTitle = args['projectTitle']?.toString();
+      final papers = args['papers'];
+      if (papers is List) {
+        _papers = papers.whereType<Map>().map((paper) => Map<String, dynamic>.from(paper)).toList();
+      }
+      _searchController = TextEditingController(text: projectTitle?.isNotEmpty == true ? projectTitle! : 'Quantum');
+    } else {
+      _searchController = TextEditingController(text: 'Quantum');
+    }
+    _routeArgsLoaded = true;
   }
 
   @override
@@ -417,126 +432,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 itemCount: _papers.length,
                 itemBuilder: (context, index) {
                   final paper = _papers[index];
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                paper['title']!,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.25,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${paper['authors']} • ${paper['year']}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.outline,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: (paper['tags'] as List<String>).map((tag) {
-                                  return Container(
-                                    margin: const EdgeInsets.only(right: 6.0),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.surfaceContainerHigh,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      tag,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: 10,
-                                        color: theme.colorScheme.outline,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              if (paper['abstract'] != null) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  '"${paper['abstract']}"',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: theme.colorScheme.outline,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  ElevatedButton.icon(
-                                    onPressed: () => _showCiteDialog(paper['citation']!),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: theme.colorScheme.primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.format_quote, size: 16),
-                                    label: const Text('Cite', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  OutlinedButton(
-                                    onPressed: () => _showSummaryDialog(paper['title']!, paper['summary']!),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      side: BorderSide(color: theme.colorScheme.outline),
-                                    ),
-                                    child: const Text('Summary', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              paper['imageUrl']!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.image, color: theme.colorScheme.outline),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildPaperCard(theme, paper);
                 },
               ),
             ],
@@ -596,6 +492,57 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 16),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaperCard(ThemeData theme, Map<String, dynamic> paper) {
+    final authors = paper['authors'];
+    final authorText = authors is List
+        ? authors.map((author) => author.toString()).join(', ')
+        : authors?.toString() ?? 'Unknown authors';
+    final citations = paper['citations'];
+    final year = paper['year'];
+    final citationLabel = citations == null ? '0 citations' : '$citations citations';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            paper['title']?.toString() ?? 'Untitled paper',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            [authorText, if (year != null) year.toString(), citationLabel].join(' • '),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          if (paper['abstract'] != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              paper['abstract'].toString(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
 import sys
 
@@ -14,10 +15,14 @@ for path in (BASE_DIR, AGENTS_DIR):
     if path_text not in sys.path:
         sys.path.insert(0, path_text)
 
+from supabase_service import SupabaseError
 from supabase_service import supabase_service
 
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(AGENTS_DIR / ".env")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ScholarFlow Backend", version="0.1.0")
 
@@ -126,16 +131,20 @@ def sign_up(payload: SignUpRequest) -> dict:
     if not password.strip():
         raise HTTPException(status_code=400, detail="Password is required.")
 
-    _ensure_supabase()
-    return supabase_service.sign_up_user(
-        email=email,
-        password=password,
-        full_name=payload.full_name.strip(),
-        avatar_url=payload.avatar_url.strip(),
-        university=payload.university.strip(),
-        role=payload.role.strip(),
-        research_interest=payload.research_interest.strip(),
-    )
+    try:
+        _ensure_supabase()
+        return supabase_service.sign_up_user(
+            email=email,
+            password=password,
+            full_name=payload.full_name.strip(),
+            avatar_url=payload.avatar_url.strip(),
+            university=payload.university.strip(),
+            role=payload.role.strip(),
+            research_interest=payload.research_interest.strip(),
+        )
+    except SupabaseError as error:
+        logger.exception("Sign up failed for %s", email)
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
 
 @app.post("/auth/signin")
@@ -147,8 +156,12 @@ def sign_in(payload: SignInRequest) -> dict:
     if not password.strip():
         raise HTTPException(status_code=400, detail="Password is required.")
 
-    _ensure_supabase()
-    return supabase_service.sign_in_user(email=email, password=password)
+    try:
+        _ensure_supabase()
+        return supabase_service.sign_in_user(email=email, password=password)
+    except SupabaseError as error:
+        logger.exception("Sign in failed for %s", email)
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
 
 @app.post("/agents/summary")

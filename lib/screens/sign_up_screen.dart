@@ -13,6 +13,7 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
+  final _avatarUrlController = TextEditingController();
   final _emailController = TextEditingController();
   final _universityController = TextEditingController();
   final _researchInterestController = TextEditingController();
@@ -24,6 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
+    _avatarUrlController.dispose();
     _emailController.dispose();
     _universityController.dispose();
     _researchInterestController.dispose();
@@ -45,6 +47,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _fullNameController.text.trim(),
+        avatarUrl: _avatarUrlController.text.trim(),
         university: _universityController.text.trim(),
         role: _selectedRole ?? '',
         researchInterest: _researchInterestController.text.trim(),
@@ -169,6 +172,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Enter your full name',
                           prefixIcon: Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Avatar URL
+                      _buildLabel(theme, 'AVATAR URL'),
+                      TextFormField(
+                        controller: _avatarUrlController,
+                        keyboardType: TextInputType.url,
+                        decoration: const InputDecoration(
+                          hintText: 'https://example.com/avatar.png',
+                          prefixIcon: Icon(Icons.image_outlined),
                         ),
                       ),
                       const SizedBox(height: 16),

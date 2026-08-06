@@ -59,6 +59,7 @@ class SignUpRequest(BaseModel):
     email: str
     password: str
     full_name: str = Field(default="")
+    avatar_url: str = Field(default="")
     university: str = Field(default="")
     role: str = Field(default="")
     research_interest: str = Field(default="")
@@ -130,6 +131,7 @@ def sign_up(payload: SignUpRequest) -> dict:
         email=email,
         password=password,
         full_name=payload.full_name.strip(),
+        avatar_url=payload.avatar_url.strip(),
         university=payload.university.strip(),
         role=payload.role.strip(),
         research_interest=payload.research_interest.strip(),

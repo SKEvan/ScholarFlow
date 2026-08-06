@@ -260,6 +260,7 @@ class SupabaseService:
         email: str,
         password: str,
         full_name: str = "",
+        avatar_url: str = "",
         university: str = "",
         role: str = "",
         research_interest: str = "",
@@ -273,6 +274,7 @@ class SupabaseService:
                 "options": {
                     "data": {
                         "full_name": full_name,
+                        "avatar_url": avatar_url,
                         "university": university,
                         "role": role,
                         "research_interest": research_interest,
@@ -289,6 +291,7 @@ class SupabaseService:
                 json_body={
                     "id": user.get("id"),
                     "full_name": full_name or None,
+                    "avatar_url": avatar_url or None,
                     "university": university or None,
                     "role": role or None,
                 },
@@ -300,6 +303,7 @@ class SupabaseService:
             "profile": {
                 "id": user.get("id"),
                 "full_name": full_name or None,
+                "avatar_url": avatar_url or None,
                 "university": university or None,
                 "role": role or None,
             },

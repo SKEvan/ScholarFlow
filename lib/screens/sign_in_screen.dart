@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:scholar_flow/services/backend_api.dart';
+
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -9,11 +11,50 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
-  void _submitForm() {
-    // Navigate straight to dashboard for preview/prototype purposes
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitForm() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await BackendApi.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign in failed: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -102,7 +143,17 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
+                        controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           hintText: 'name@university.edu',
                           prefixIcon: Icon(Icons.mail_outline),
@@ -121,7 +172,14 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
+                        controller: _passwordController,
                         obscureText: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password is required';
+                          }
+                          return null;
+                        },
                         decoration: InputDecoration(
                           hintText: '••••••••',
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -159,15 +217,21 @@ class _SignInScreenState extends State<SignInScreen> {
 
                       // Sign In Button
                       ElevatedButton(
-                        onPressed: _submitForm,
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Sign In'),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 18),
-                          ],
-                        ),
+                        onPressed: _isSubmitting ? null : _submitForm,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Sign In'),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward, size: 18),
+                                ],
+                              ),
                       ),
                     ],
                   ),
@@ -200,7 +264,11 @@ class _SignInScreenState extends State<SignInScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _submitForm,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Google sign-in is not configured yet.')),
+                          );
+                        },
                         icon: Image.network(
                           'https://lh3.googleusercontent.com/aida-public/AB6AXuCPrz5JGj39MXh5qItGlUhCvHavI1qW21OZZ-wu9VNkgIznykj3X4nQWpXfs-xfw4HE8EfbetArRYuvulVQ7gZI2IFDvf_-gOUDkAPRO2ump0ezrehM8TQaFaHfK2Xg1RVhfl0hH6fi7WIZMCMVjBmgGfTBcUnZC5YduWmfViwzeaMC728QwiDZ_Cd-esiwpoh_2LaHJxMMzslUk_tkgM1nSqclJNNDSgf7rCoODrFam5JWIZc6DnjmnYsFZP3-yScdS5_j6Pb6lHs',
                           height: 20,
@@ -223,7 +291,11 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _submitForm,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('LinkedIn sign-in is not configured yet.')),
+                          );
+                        },
                         icon: Image.network(
                           'https://lh3.googleusercontent.com/aida-public/AB6AXuCaTQzSL1X0tjmxiCLtDDsE-d_POAv6JOsvjzNT4UOsUuZJ4czz88XhEmdcEihQuf0MlHQtHpQMjASewRE3e-ipyYPO5qkgbB8s7whjuckA1GXKKkIGA04D7v62rIGdCZ-tGHRT58ABgDB_T2MFvbv_sHF4pvITnGWOO8B9Pg-upJu87I7mh7kW1Ay9NBLYIAQhlZ4dBzIGRGFS7nLXvnDijn657PfW0Gw029aAHRbNXls7FGlCCuEEiS-pbC8mCFEozjEN8YvxMsA',
                           height: 20,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:scholar_flow/services/backend_api.dart';
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -10,12 +12,73 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _universityController = TextEditingController();
+  final _researchInterestController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
   String? _selectedRole;
 
-  void _submitForm() {
-    // Navigate straight to dashboard for preview/prototype purposes
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _universityController.dispose();
+    _researchInterestController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitForm() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final result = await BackendApi.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        fullName: _fullNameController.text.trim(),
+        university: _universityController.text.trim(),
+        role: _selectedRole ?? '',
+        researchInterest: _researchInterestController.text.trim(),
+      );
+      if (!mounted) {
+        return;
+      }
+
+      final session = result['session'];
+      if (session is Map && session.isNotEmpty) {
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created. Please check your email before signing in.'),
+        ),
+      );
+      Navigator.of(context).pushReplacementNamed('/signin');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign up failed: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -96,6 +159,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Full Name
                       _buildLabel(theme, 'FULL NAME'),
                       TextFormField(
+                        controller: _fullNameController,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Full name is required';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           hintText: 'Enter your full name',
                           prefixIcon: Icon(Icons.person_outline),
@@ -106,7 +176,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Email Address
                       _buildLabel(theme, 'EMAIL ADDRESS'),
                       TextFormField(
+                        controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           hintText: 'name@university.edu',
                           prefixIcon: Icon(Icons.mail_outline),
@@ -117,6 +197,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Academic Institution
                       _buildLabel(theme, 'ACADEMIC INSTITUTION'),
                       TextFormField(
+                        controller: _universityController,
                         decoration: const InputDecoration(
                           hintText: 'University or Organization',
                           prefixIcon: Icon(Icons.school_outlined),
@@ -127,7 +208,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Professional Role
                       _buildLabel(theme, 'PROFESSIONAL ROLE'),
                       DropdownButtonFormField<String>(
-                        value: _selectedRole,
+                        initialValue: _selectedRole,
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.work_outline),
                         ),
@@ -155,6 +236,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Research Interest
                       _buildLabel(theme, 'PRIMARY RESEARCH INTEREST'),
                       TextFormField(
+                        controller: _researchInterestController,
                         decoration: const InputDecoration(
                           hintText: 'e.g. Quantum Computing',
                           prefixIcon: Icon(Icons.search),
@@ -165,7 +247,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Password
                       _buildLabel(theme, 'PASSWORD'),
                       TextFormField(
+                        controller: _passwordController,
                         obscureText: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password is required';
+                          }
+                          if (value.length < 8) {
+                            return 'Use at least 8 characters';
+                          }
+                          return null;
+                        },
                         decoration: InputDecoration(
                           hintText: 'Min. 8 characters',
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -185,8 +277,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       // Sign Up Button
                       ElevatedButton(
-                        onPressed: _submitForm,
-                        child: const Text('Sign Up'),
+                        onPressed: _isSubmitting ? null : _submitForm,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Sign Up'),
                       ),
                     ],
                   ),
@@ -218,7 +316,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Column(
                   children: [
                     OutlinedButton.icon(
-                      onPressed: _submitForm,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Google sign-up is not configured yet.')),
+                        );
+                      },
                       icon: Image.network(
                         'https://lh3.googleusercontent.com/aida-public/AB6AXuCPrz5JGj39MXh5qItGlUhCvHavI1qW21OZZ-wu9VNkgIznykj3X4nQWpXfs-xfw4HE8EfbetArRYuvulVQ7gZI2IFDvf_-gOUDkAPRO2ump0ezrehM8TQaFaHfK2Xg1RVhfl0hH6fi7WIZMCMVjBmgGfTBcUnZC5YduWmfViwzeaMC728QwiDZ_Cd-esiwpoh_2LaHJxMMzslUk_tkgM1nSqclJNNDSgf7rCoODrFam5JWIZc6DnjmnYsFZP3-yScdS5_j6Pb6lHs',
                         height: 20,
@@ -240,7 +342,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: _submitForm,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('LinkedIn sign-up is not configured yet.')),
+                        );
+                      },
                       icon: Image.network(
                         'https://lh3.googleusercontent.com/aida-public/AB6AXuCaTQzSL1X0tjmxiCLtDDsE-d_POAv6JOsvjzNT4UOsUuZJ4czz88XhEmdcEihQuf0MlHQtHpQMjASewRE3e-ipyYPO5qkgbB8s7whjuckA1GXKKkIGA04D7v62rIGdCZ-tGHRT58ABgDB_T2MFvbv_sHF4pvITnGWOO8B9Pg-upJu87I7mh7kW1Ay9NBLYIAQhlZ4dBzIGRGFS7nLXvnDijn657PfW0Gw029aAHRbNXls7FGlCCuEEiS-pbC8mCFEozjEN8YvxMsA',
                         height: 20,

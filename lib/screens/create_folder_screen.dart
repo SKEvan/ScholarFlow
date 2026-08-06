@@ -18,6 +18,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
   final List<String> _collaborators = [];
 
   bool _isCreating = false;
+  String _creatingStageText = 'Creating Project...';
   String _selectedStatus = 'active';
   DateTime? _startDate;
   DateTime? _deadline;
@@ -116,9 +117,14 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
 
     setState(() {
       _isCreating = true;
+      _creatingStageText = 'Creating Project...';
     });
 
     try {
+      setState(() {
+        _creatingStageText = 'Fetching Papers...';
+      });
+
       final result = await BackendApi.createProjectAndResearch(
         title,
         description: _descriptionController.text.trim(),
@@ -388,9 +394,9 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Creating project...',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Text(
+                        _creatingStageText,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),

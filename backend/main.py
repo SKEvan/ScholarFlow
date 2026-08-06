@@ -55,6 +55,20 @@ class RestoreVersionRequest(BaseModel):
     version_id: int
 
 
+class SignUpRequest(BaseModel):
+    email: str
+    password: str
+    full_name: str = Field(default="")
+    university: str = Field(default="")
+    role: str = Field(default="")
+    research_interest: str = Field(default="")
+
+
+class SignInRequest(BaseModel):
+    email: str
+    password: str
+
+
 def _load_project_abstracts(project_id: int, selected_paper_ids: list[int] | None = None) -> list[dict]:
     selected_ids = selected_paper_ids or []
     papers = supabase_service.list_project_papers(project_id, selected_only=bool(selected_ids))
@@ -100,6 +114,39 @@ def health() -> dict[str, str]:
         "message": "Backend is healthy.",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.post("/auth/signup")
+def sign_up(payload: SignUpRequest) -> dict:
+    email = payload.email.strip()
+    password = payload.password
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+    if not password.strip():
+        raise HTTPException(status_code=400, detail="Password is required.")
+
+    _ensure_supabase()
+    return supabase_service.sign_up_user(
+        email=email,
+        password=password,
+        full_name=payload.full_name.strip(),
+        university=payload.university.strip(),
+        role=payload.role.strip(),
+        research_interest=payload.research_interest.strip(),
+    )
+
+
+@app.post("/auth/signin")
+def sign_in(payload: SignInRequest) -> dict:
+    email = payload.email.strip()
+    password = payload.password
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+    if not password.strip():
+        raise HTTPException(status_code=400, detail="Password is required.")
+
+    _ensure_supabase()
+    return supabase_service.sign_in_user(email=email, password=password)
 
 
 @app.post("/agents/summary")

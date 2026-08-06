@@ -51,6 +51,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   List<Map<String, dynamic>> _projectPapers = [];
   List<Map<String, dynamic>> _versions = [];
   Set<int> _selectedPaperIds = <int>{};
+  final Set<int> _expandedPaperIds = <int>{};
 
   String _selectedAiTool = 'Generate Summary';
   String _selectedAiChoice = 'General Summary';
@@ -204,7 +205,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -250,7 +251,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: _projectPapers.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, index) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final paper = _projectPapers[index];
                           final paperId = int.parse(paper['id'].toString());
@@ -462,27 +463,99 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildPaperCard(ThemeData theme, Map<String, dynamic> paper) {
     final paperId = int.parse(paper['id'].toString());
+    final isExpanded = _expandedPaperIds.contains(paperId);
+    final abstractText = (paper['abstract'] ?? '').toString().trim();
+    final paperUrl = (paper['paper_url'] ?? '').toString().trim();
+    final doi = (paper['doi'] ?? '').toString().trim();
+    final doiUrl = (paper['doi_url'] ?? '').toString().trim();
+    final pdfUrl = (paper['pdf_url'] ?? '').toString().trim();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: CheckboxListTile(
-        value: _selectedPaperIds.contains(paperId),
-        onChanged: (checked) {
-          setState(() {
-            if (checked == true) {
-              _selectedPaperIds.add(paperId);
-            } else {
-              _selectedPaperIds.remove(paperId);
-            }
-          });
-        },
-        controlAffinity: ListTileControlAffinity.leading,
-        title: Text(
-          paper['title']?.toString() ?? 'Untitled paper',
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '${paper['authors'] ?? 'Unknown authors'} • ${paper['year'] ?? ''} • ${paper['citations'] ?? 0} citations',
-        ),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            value: _selectedPaperIds.contains(paperId),
+            onChanged: (checked) {
+              setState(() {
+                if (checked == true) {
+                  _selectedPaperIds.add(paperId);
+                } else {
+                  _selectedPaperIds.remove(paperId);
+                }
+              });
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              paper['title']?.toString() ?? 'Untitled paper',
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${paper['authors'] ?? 'Unknown authors'} • ${paper['year'] ?? ''} • ${paper['citations'] ?? 0} citations',
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedPaperIds.remove(paperId);
+                } else {
+                  _expandedPaperIds.add(paperId);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                children: [
+                  Text(
+                    isExpanded ? 'Hide details' : 'View details',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35)),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  Text('Abstract', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    abstractText.isEmpty ? 'No abstract stored.' : abstractText,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Metadata', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('DOI: ${doi.isEmpty ? 'N/A' : doi}', style: theme.textTheme.bodySmall),
+                  Text('Paper URL: ${paperUrl.isEmpty ? 'N/A' : paperUrl}', style: theme.textTheme.bodySmall),
+                  Text('DOI URL: ${doiUrl.isEmpty ? 'N/A' : doiUrl}', style: theme.textTheme.bodySmall),
+                  Text('PDF URL: ${pdfUrl.isEmpty ? 'N/A' : pdfUrl}', style: theme.textTheme.bodySmall),
+                  Text('Fetched at: ${paper['fetched_at'] ?? 'N/A'}', style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

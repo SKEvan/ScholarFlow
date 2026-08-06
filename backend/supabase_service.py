@@ -19,13 +19,26 @@ def _normalize_base_url(raw_url: str) -> str:
     return f"{base}/rest/v1"
 
 
+def _normalize_project_url(raw_url: str) -> str:
+    base = raw_url.rstrip("/")
+    if not base:
+        return ""
+    if base.endswith("/rest/v1"):
+        return base[: -len("/rest/v1")]
+    return base
+
+
 class SupabaseService:
     def __init__(self) -> None:
         self.base_url = _normalize_base_url(os.getenv("SUPABASE_URL", ""))
+        self.project_url = _normalize_project_url(os.getenv("SUPABASE_URL", ""))
         self.api_key = os.getenv("SUPABASE_API_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
 
     def is_configured(self) -> bool:
         return bool(self.base_url and self.api_key)
+
+    def is_auth_configured(self) -> bool:
+        return bool(self.project_url and self.api_key)
 
     def _headers(self) -> Dict[str, str]:
         if not self.is_configured():
@@ -37,6 +50,15 @@ class SupabaseService:
             "Prefer": "return=representation",
         }
 
+    def _auth_headers(self) -> Dict[str, str]:
+        if not self.is_auth_configured():
+            raise SupabaseError("Supabase auth is not configured. Set SUPABASE_URL and SUPABASE_API_KEY.")
+        return {
+            "apikey": self.api_key,
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
     def _request(
         self,
         method: str,
@@ -44,12 +66,16 @@ class SupabaseService:
         *,
         params: Optional[Dict[str, Any]] = None,
         json_body: Any = None,
+        prefer: Optional[str] = None,
     ) -> Any:
         url = f"{self.base_url}/{path.lstrip('/')}"
+        headers = self._headers()
+        if prefer:
+            headers["Prefer"] = prefer
         response = requests.request(
             method,
             url,
-            headers=self._headers(),
+            headers=headers,
             params=params,
             json=json_body,
             timeout=30,
@@ -58,6 +84,29 @@ class SupabaseService:
             raise SupabaseError(f"Supabase request failed ({response.status_code}): {response.text}")
         if not response.text:
             return []
+        return response.json()
+
+    def _auth_request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        json_body: Any = None,
+    ) -> Any:
+        url = f"{self.project_url}/{path.lstrip('/')}"
+        response = requests.request(
+            method,
+            url,
+            headers=self._auth_headers(),
+            params=params,
+            json=json_body,
+            timeout=30,
+        )
+        if response.status_code >= 400:
+            raise SupabaseError(f"Supabase auth request failed ({response.status_code}): {response.text}")
+        if not response.text:
+            return {}
         return response.json()
 
     @staticmethod
@@ -204,6 +253,82 @@ class SupabaseService:
             params={"id": f"eq.{version_id}"},
             json_body={"is_current": True},
         )
+
+    def sign_up_user(
+        self,
+        *,
+        email: str,
+        password: str,
+        full_name: str = "",
+        university: str = "",
+        role: str = "",
+        research_interest: str = "",
+    ) -> Dict[str, Any]:
+        auth_result = self._auth_request(
+            "POST",
+            "auth/v1/signup",
+            json_body={
+                "email": email,
+                "password": password,
+                "options": {
+                    "data": {
+                        "full_name": full_name,
+                        "university": university,
+                        "role": role,
+                        "research_interest": research_interest,
+                    }
+                },
+            },
+        )
+        user = (auth_result or {}).get("user") or {}
+        if user.get("id"):
+            self._request(
+                "POST",
+                "profiles",
+                params={"on_conflict": "id"},
+                json_body={
+                    "id": user.get("id"),
+                    "full_name": full_name or None,
+                    "university": university or None,
+                    "role": role or None,
+                },
+                prefer="resolution=merge-duplicates,return=representation",
+            )
+        return {
+            "user": user,
+            "session": auth_result.get("session") if isinstance(auth_result, dict) else None,
+            "profile": {
+                "id": user.get("id"),
+                "full_name": full_name or None,
+                "university": university or None,
+                "role": role or None,
+            },
+        }
+
+    def sign_in_user(self, *, email: str, password: str) -> Dict[str, Any]:
+        auth_result = self._auth_request(
+            "POST",
+            "auth/v1/token",
+            params={"grant_type": "password"},
+            json_body={
+                "email": email,
+                "password": password,
+            },
+        )
+        user = (auth_result or {}).get("user") or {}
+        profile: Dict[str, Any] = {}
+        if user.get("id"):
+            result = self._request(
+                "GET",
+                "profiles",
+                params={"id": f"eq.{user.get('id')}", "select": "*"},
+            )
+            profile = self._single(result)
+        return {
+            "user": user,
+            "session": auth_result.get("session") if isinstance(auth_result, dict) else None,
+            "profile": profile,
+        }
 
 
 supabase_service = SupabaseService()

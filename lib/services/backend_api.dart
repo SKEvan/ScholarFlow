@@ -74,6 +74,72 @@ class BackendApi {
     throw Exception('Unexpected backend response shape.');
   }
 
+  static Future<Map<String, dynamic>> signUp({
+    required String email,
+    required String password,
+    String fullName = '',
+    String university = '',
+    String role = '',
+    String researchInterest = '',
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/signup'),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'full_name': fullName,
+          'university': university,
+          'role': role,
+          'research_interest': researchInterest,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  static Future<Map<String, dynamic>> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/signin'),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
   static Future<List<Map<String, dynamic>>> listProjects() async {
     final response = await _send(() => http.get(Uri.parse('$baseUrl/projects')));
 

@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS public.projects CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
 CREATE TABLE public.profiles (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  id uuid NOT NULL,
   full_name text,
   avatar_url text,
   university text,
@@ -18,8 +18,8 @@ CREATE TABLE public.profiles (
   CONSTRAINT profiles_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.projects (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  owner_id bigint,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_id uuid,
   title text DEFAULT ''::text,
   description text DEFAULT ''::text,
   status text DEFAULT ''::text,
@@ -31,16 +31,16 @@ CREATE TABLE public.projects (
   latest_research_gap jsonb,
   latest_literature_review jsonb,
   latest_papers jsonb,
-  current_version_id bigint,
+  current_version_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp without time zone,
   CONSTRAINT projects_pkey PRIMARY KEY (id),
   CONSTRAINT projects_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.project_members (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  project_id bigint,
-  user_id bigint,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  project_id uuid,
+  user_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   member_role text,
   joined_at timestamp without time zone,
@@ -49,10 +49,10 @@ CREATE TABLE public.project_members (
   CONSTRAINT project_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.collaboration_requests (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  project_id bigint,
-  requested_by bigint,
-  requested_to bigint,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  project_id uuid,
+  requested_by uuid,
+  requested_to uuid,
   message text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT collaboration_requests_pkey PRIMARY KEY (id),
@@ -61,9 +61,9 @@ CREATE TABLE public.collaboration_requests (
   CONSTRAINT collaboration_requests_requested_to_fkey FOREIGN KEY (requested_to) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.version (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  project_id bigint,
-  created_by bigint,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  project_id uuid,
+  created_by uuid,
   snapshot_name text,
   summary jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -78,8 +78,8 @@ CREATE TABLE public.version (
   CONSTRAINT ai_outputs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.project_papers (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  project_id bigint,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  project_id uuid,
   title text,
   authors text,
   abstract text,
@@ -94,3 +94,8 @@ CREATE TABLE public.project_papers (
   CONSTRAINT project_papers_pkey PRIMARY KEY (id),
   CONSTRAINT project_papers_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id)
 );
+
+ALTER TABLE public.projects
+ADD CONSTRAINT projects_current_version_id_fkey
+FOREIGN KEY (current_version_id)
+REFERENCES public.version(id);

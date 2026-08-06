@@ -8,8 +8,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _activeTab = 0;
-
   void _showReportsDialog() {
     showDialog(
       context: context,
@@ -133,14 +131,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               leading: const Icon(Icons.search),
               title: const Text('Discover'),
               onTap: () => Navigator.of(context).pop(),
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_open),
-              title: const Text('Projects'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/projects');
-              },
             ),
             ListTile(
               leading: const Icon(Icons.group),
@@ -288,38 +278,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   _buildQuickAction(
                     theme,
-                    icon: Icons.folder_shared,
-                    title: 'Shared',
-                    bgColor: theme.colorScheme.surfaceContainerHigh,
-                    iconColor: theme.colorScheme.secondary,
-                    onTap: () => Navigator.of(context).pushNamed('/projects'),
-                  ),
-                  _buildQuickAction(
-                    theme,
                     icon: Icons.groups,
-                          title: 'Collaboration',
+                    title: 'Collaboration',
                     bgColor: theme.colorScheme.surfaceContainerHigh,
                     iconColor: theme.colorScheme.secondary,
-                          onTap: () => Navigator.of(context).pushNamed('/add-collaborator'),
+                    onTap: () => Navigator.of(context).pushNamed('/add-collaborator'),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
 
-              // Recently Active Section
+              // Running Projects Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recently Active',
+                    'Running Projects',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed('/projects'),
+                    onTap: () => Navigator.of(context).pushNamed('/create-folder'),
                     child: Text(
-                      'VIEW ALL',
+                      'NEW PROJECT',
                       style: TextStyle(
                         color: theme.colorScheme.secondary,
                         fontWeight: FontWeight.bold,
@@ -358,30 +340,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _activeTab,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.of(context).pushReplacementNamed('/projects');
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: theme.colorScheme.secondary,
-        unselectedItemColor: theme.colorScheme.outline,
-        selectedLabelStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 10),
-        unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(fontSize: 10),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder_open),
-            label: 'Projects',
-          ),
-        ],
       ),
     );
   }

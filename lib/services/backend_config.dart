@@ -6,7 +6,7 @@ class BackendConfig {
   static const String _prefsKey = 'backend_base_url';
   static const String defaultBaseUrl = String.fromEnvironment(
     'BACKEND_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'https://scholarflow-i4bq.onrender.com',
   );
 
   static String _baseUrl = defaultBaseUrl;
@@ -17,13 +17,27 @@ class BackendConfig {
 
   static bool get hasCustomBaseUrl => _hasStoredValue;
 
+  static bool _isLocalDevelopmentUrl(String value) {
+    final host = Uri.tryParse(value)?.host ?? '';
+    return host == '127.0.0.1' || host == 'localhost' || host == '10.0.2.2';
+  }
+
   static Future<void> load() async {
     if (_loaded) {
       return;
     }
     final prefs = await SharedPreferences.getInstance();
     _hasStoredValue = prefs.containsKey(_prefsKey);
-    _baseUrl = prefs.getString(_prefsKey) ?? defaultBaseUrl;
+    final storedValue = prefs.getString(_prefsKey);
+    if (storedValue != null && storedValue.isNotEmpty && !_isLocalDevelopmentUrl(storedValue)) {
+      _baseUrl = storedValue;
+    } else {
+      _baseUrl = defaultBaseUrl;
+      if (storedValue != null && _isLocalDevelopmentUrl(storedValue)) {
+        _hasStoredValue = false;
+        await prefs.remove(_prefsKey);
+      }
+    }
     _loaded = true;
   }
 

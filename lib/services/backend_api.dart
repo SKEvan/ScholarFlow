@@ -17,7 +17,7 @@ class BackendApi {
     final host = Uri.tryParse(await baseUrl)?.host ?? '';
     final isLocalHost = host == '127.0.0.1' || host == 'localhost' || host == '10.0.2.2';
     if (error is SocketException && isLocalHost) {
-      return 'Backend not reachable from this device. Use your computer\'s LAN IP or deploy the backend, then launch with --dart-define=BACKEND_BASE_URL=http://<your-ip>:8000.';
+      return 'Backend not reachable from this device. Set BACKEND_BASE_URL to https://scholarflow-i4bq.onrender.com or deploy the backend URL in app settings.';
     }
     return error.toString();
   }

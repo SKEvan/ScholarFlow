@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../services/backend_config.dart';
 import '../services/backend_api.dart';
-import '../theme.dart';
 
 class CreateFolderScreen extends StatefulWidget {
   const CreateFolderScreen({super.key});
@@ -10,58 +11,157 @@ class CreateFolderScreen extends StatefulWidget {
 }
 
 class _CreateFolderScreenState extends State<CreateFolderScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  
-  Color _selectedColor = AppTheme.actionBlue; // Default blue
-  IconData _selectedIcon = Icons.folder;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _collaboratorController = TextEditingController();
+
+  final List<String> _statuses = ['active', 'planned', 'completed'];
+  final List<String> _collaborators = [];
+
   bool _isCreating = false;
+  String _selectedStatus = 'active';
+  DateTime? _startDate;
+  DateTime? _deadline;
+  bool _backendPromptShown = false;
 
-  final List<Color> _colors = [
-    AppTheme.actionBlue, // Blue
-    AppTheme.folderGold, // Gold/Brown
-    AppTheme.folderRed, // Red
-    Colors.black, // Black
-  ];
-
-  final List<Map<String, dynamic>> _icons = [
-    {'icon': Icons.folder, 'name': 'folder'},
-    {'icon': Icons.menu_book, 'name': 'book'},
-    {'icon': Icons.science, 'name': 'science'},
-    {'icon': Icons.school, 'name': 'school'},
-    {'icon': Icons.storage, 'name': 'database'},
-    {'icon': Icons.auto_awesome, 'name': 'ai'},
-  ];
-
-  final List<Map<String, dynamic>> _existingFolders = [
-    {
-      'title': 'Machine Learning Basics',
-      'papers': '12 Papers',
-      'updated': 'Updated 2d ago',
-      'color': AppTheme.folderGold,
-    },
-    {
-      'title': 'Climate Change Ethics',
-      'papers': '5 Papers',
-      'updated': 'Updated 5h ago',
-      'color': AppTheme.actionBlue,
-    },
-    {
-      'title': 'Thesis References',
-      'papers': '28 Papers',
-      'updated': 'Updated 1w ago',
-      'color': AppTheme.folderRed,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _ensureBackendConfigured();
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _collaboratorController.dispose();
     super.dispose();
   }
 
-  void _onCreateFolder() async {
-    final projectTitle = _nameController.text.trim();
-    if (projectTitle.isEmpty) {
+  String? _formatDate(DateTime? date) {
+    if (date == null) {
+      return null;
+    }
+    return date.toIso8601String().split('T').first;
+  }
+
+  Future<void> _pickDate({required bool isStartDate}) async {
+    final initialDate = isStartDate ? _startDate ?? DateTime.now() : _deadline ?? DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (selected == null) {
+      return;
+    }
+
+    setState(() {
+      if (isStartDate) {
+        _startDate = selected;
+      } else {
+        _deadline = selected;
+      }
+    });
+  }
+
+  void _addCollaborator() {
+    final collaborator = _collaboratorController.text.trim();
+    if (collaborator.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _collaborators.add(collaborator);
+      _collaboratorController.clear();
+    });
+  }
+
+  Future<void> _showAddCollaboratorDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Add Collaborator'),
+          content: TextField(
+            controller: _collaboratorController,
+            decoration: const InputDecoration(
+              labelText: 'Collaborator name or email',
+            ),
+            onSubmitted: (_) {
+              _addCollaborator();
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _addCollaborator();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showBackendDialog() async {
+    final controller = TextEditingController(text: BackendConfig.baseUrl);
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Backend URL'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'http://your-ip:8000',
+              helperText: 'Use your computer\'s LAN IP when testing on a phone.',
+            ),
+            keyboardType: TextInputType.url,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await BackendConfig.setBaseUrl(controller.text);
+                if (context.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _ensureBackendConfigured() async {
+    await BackendConfig.load();
+    if (_backendPromptShown || BackendConfig.hasCustomBaseUrl || !mounted) {
+      return;
+    }
+    _backendPromptShown = true;
+    await Future<void>.delayed(Duration.zero);
+    await _showBackendDialog();
+  }
+
+  Future<void> _createProject() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a project title.')),
       );
@@ -72,8 +172,28 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
       _isCreating = true;
     });
 
+    await BackendConfig.load();
+    if (!BackendConfig.hasCustomBaseUrl) {
+      await _showBackendDialog();
+      if (!BackendConfig.hasCustomBaseUrl) {
+        if (mounted) {
+          setState(() {
+            _isCreating = false;
+          });
+        }
+        return;
+      }
+    }
+
     try {
-      final response = await BackendApi.researchProject(projectTitle);
+      final result = await BackendApi.createProjectAndResearch(
+        title,
+        description: _descriptionController.text.trim(),
+        status: _selectedStatus,
+        startDate: _formatDate(_startDate),
+        deadline: _formatDate(_deadline),
+        collaborators: _collaborators,
+      );
 
       if (!mounted) {
         return;
@@ -83,15 +203,14 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
         _isCreating = false;
       });
 
+      final project = result['project'];
       Navigator.of(context).pushReplacementNamed(
-        '/search-results',
+        '/project-details',
         arguments: {
-          'projectTitle': response['project'] is Map ? response['project']['title'] : projectTitle,
-          'searchQueries': response['search_queries'] ?? const [],
-          'papers': response['papers'] ?? const [],
+          'projectId': project is Map ? project['id'] : null,
+          'projectTitle': project is Map ? project['title'] : title,
         },
       );
-      return;
     } catch (error) {
       if (!mounted) {
         return;
@@ -100,10 +219,10 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
       setState(() {
         _isCreating = false;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Project research failed: $error')),
+        SnackBar(content: Text('Could not create project: $error')),
       );
-      return;
     }
   }
 
@@ -132,356 +251,203 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
       body: Stack(
         children: [
           SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'PROJECT TITLE',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      hintText: 'e.g., Quantum Computing Research',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'DESCRIPTION',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _descriptionController,
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: 'Short description of the project',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'PROJECT STATUS',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedStatus,
+                    items: _statuses
+                        .map(
+                          (status) => DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status[0].toUpperCase() + status.substring(1)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        _selectedStatus = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Folder Name Input
-                        Text(
-                          'PROJECT TITLE',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
+                        ListTile(
+                          title: const Text('START DATE'),
+                          subtitle: Text(_formatDate(_startDate) ?? 'Pick a start date'),
+                          trailing: const Icon(Icons.date_range),
+                          onTap: () => _pickDate(isStartDate: true),
                         ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            hintText: 'e.g., Quantum Computing Research',
-                            hintStyle: TextStyle(color: theme.colorScheme.outline.withOpacity(0.5)),
-                            fillColor: Colors.white,
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                            ),
-                          ),
+                        const Divider(height: 1),
+                        ListTile(
+                          title: const Text('DEADLINE'),
+                          subtitle: Text(_formatDate(_deadline) ?? 'Pick a deadline'),
+                          trailing: const Icon(Icons.date_range),
+                          onTap: () => _pickDate(isStartDate: false),
                         ),
-                        const SizedBox(height: 20),
-
-                        // Custom Aesthetic Picker Container
-                        Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Theme color
-                              Text(
-                                'THEME COLOR',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.outline,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  ..._colors.map((color) {
-                                    final isSelected = _selectedColor == color;
-                                    return GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedColor = color;
-                                        });
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.only(right: 12),
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          shape: BoxShape.circle,
-                                          border: isSelected
-                                              ? Border.all(color: Colors.white, width: 2)
-                                              : null,
-                                          boxShadow: isSelected
-                                              ? [
-                                                  BoxShadow(
-                                                    color: color.withOpacity(0.4),
-                                                    blurRadius: 6,
-                                                    spreadRadius: 2,
-                                                  )
-                                                ]
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                  // Custom add color button
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.surfaceContainerHigh,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: theme.colorScheme.outlineVariant),
-                                    ),
-                                    child: const Icon(Icons.add, size: 16),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Icon symbol
-                              Text(
-                                'ICON SYMBOL',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.outline,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 6,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
-                                ),
-                                itemCount: _icons.length,
-                                itemBuilder: (context, index) {
-                                  final iconData = _icons[index]['icon'] as IconData;
-                                  final isSelected = _selectedIcon == iconData;
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedIcon = iconData;
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? theme.colorScheme.surfaceContainerHighest
-                                            : Colors.white.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: isSelected
-                                            ? Border.all(color: theme.colorScheme.secondary.withOpacity(0.3), width: 2)
-                                            : null,
-                                      ),
-                                      child: Icon(
-                                        iconData,
-                                        color: isSelected ? theme.colorScheme.secondary : theme.colorScheme.outline,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Existing libraries
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'EXISTING PROJECTS',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.outline,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Text(
-                              '4 TOTAL',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Column(
-                          children: _existingFolders.map((folder) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: (folder['color'] as Color).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(
-                                      Icons.folder,
-                                      color: folder['color'] as Color,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          folder['title']!,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${folder['papers']} • ${folder['updated']}',
-                                          style: TextStyle(
-                                            color: theme.colorScheme.outline,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: theme.colorScheme.outline.withOpacity(0.5),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // AI Suggestion Box
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              _nameController.text = 'Bioinformatics Advanced Concepts';
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Suggestion autofilled!')),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: theme.colorScheme.secondary.withOpacity(0.1),
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(Icons.lightbulb, color: theme.colorScheme.secondary),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'AI SUGGESTION',
-                                        style: theme.textTheme.labelLarge?.copyWith(
-                                          color: theme.colorScheme.secondary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Based on your recent activity, we suggest naming this folder "Bioinformatics Advanced Concepts". Tap to fill.',
-                                        style: TextStyle(fontSize: 12, height: 1.35),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
-                ),
-
-                // Footer Area
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      top: BorderSide(
-                        color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: _onCreateFolder,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_circle, size: 20),
-                        label: const Text(
-                          'Create Folder',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      Text(
+                        'COLLABORATORS',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                                      'Projects organize your papers for rapid retrieval.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: theme.colorScheme.outline.withOpacity(0.7),
-                        ),
+                      TextButton.icon(
+                        onPressed: _showAddCollaboratorDialog,
+                        icon: const Icon(Icons.person_add),
+                        label: const Text('Add collaborator'),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  if (_collaborators.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      ),
+                      child: const Text('No collaborators added yet.'),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _collaborators
+                          .map(
+                            (collaborator) => Chip(
+                              label: Text(collaborator),
+                              onDeleted: () {
+                                setState(() {
+                                  _collaborators.remove(collaborator);
+                                });
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _createProject,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    ),
+                    icon: const Icon(Icons.add_circle, size: 20),
+                    label: const Text(
+                      'Create Project',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'The project will be saved in Supabase and added to your project list.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           if (_isCreating)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               child: Center(
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -490,7 +456,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                          'Creating project...',
+                        'Creating project...',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],

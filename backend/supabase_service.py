@@ -1,0 +1,209 @@
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, Iterable, List, Optional
+
+import requests
+
+
+class SupabaseError(RuntimeError):
+    pass
+
+
+def _normalize_base_url(raw_url: str) -> str:
+    base = raw_url.rstrip("/")
+    if not base:
+        return ""
+    if base.endswith("/rest/v1"):
+        return base
+    return f"{base}/rest/v1"
+
+
+class SupabaseService:
+    def __init__(self) -> None:
+        self.base_url = _normalize_base_url(os.getenv("SUPABASE_URL", ""))
+        self.api_key = os.getenv("SUPABASE_API_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
+
+    def is_configured(self) -> bool:
+        return bool(self.base_url and self.api_key)
+
+    def _headers(self) -> Dict[str, str]:
+        if not self.is_configured():
+            raise SupabaseError("Supabase is not configured. Set SUPABASE_URL and SUPABASE_API_KEY.")
+        return {
+            "apikey": self.api_key,
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        json_body: Any = None,
+    ) -> Any:
+        url = f"{self.base_url}/{path.lstrip('/')}"
+        response = requests.request(
+            method,
+            url,
+            headers=self._headers(),
+            params=params,
+            json=json_body,
+            timeout=30,
+        )
+        if response.status_code >= 400:
+            raise SupabaseError(f"Supabase request failed ({response.status_code}): {response.text}")
+        if not response.text:
+            return []
+        return response.json()
+
+    @staticmethod
+    def _single(items: Any) -> Dict[str, Any]:
+        if isinstance(items, list):
+            return items[0] if items else {}
+        if isinstance(items, dict):
+            return items
+        return {}
+
+    @staticmethod
+    def _list(value: Optional[Iterable[Any]]) -> List[Any]:
+        return list(value or [])
+
+    def create_project(
+        self,
+        title: str,
+        description: str = "",
+        status: str = "active",
+        start_date: Optional[str] = None,
+        deadline: Optional[str] = None,
+        owner_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {"title": title, "description": description, "status": status}
+        if start_date:
+            payload["start_date"] = start_date
+        if deadline:
+            payload["deadline"] = deadline
+        if owner_id is not None:
+            payload["owner_id"] = owner_id
+        result = self._request("POST", "projects", json_body=payload)
+        return self._single(result)
+
+    def list_projects(self) -> List[Dict[str, Any]]:
+        result = self._request("GET", "projects", params={"select": "*", "order": "created_at.desc"})
+        return result if isinstance(result, list) else []
+
+    def get_project(self, project_id: int) -> Dict[str, Any]:
+        result = self._request("GET", "projects", params={"id": f"eq.{project_id}", "select": "*"})
+        return self._single(result)
+
+    def update_project(self, project_id: int, updates: Dict[str, Any]) -> Dict[str, Any]:
+        result = self._request(
+            "PATCH",
+            "projects",
+            params={"id": f"eq.{project_id}"},
+            json_body=updates,
+        )
+        return self._single(result)
+
+    def create_collaboration_requests(
+        self,
+        project_id: int,
+        collaborators: List[str],
+        requested_by: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        for collaborator in collaborators:
+            cleaned = str(collaborator).strip()
+            if not cleaned:
+                continue
+            rows.append(
+                {
+                    "project_id": project_id,
+                    "requested_by": requested_by,
+                    "message": f"Invite collaborator: {cleaned}",
+                }
+            )
+        if not rows:
+            return []
+        result = self._request("POST", "collaboration_requests", json_body=rows)
+        return result if isinstance(result, list) else [result]
+
+    def upsert_project_papers(self, project_id: int, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        for paper in papers:
+            rows.append(
+                {
+                    "project_id": project_id,
+                    "title": paper.get("title") or "",
+                    "authors": ", ".join(self._list(paper.get("authors"))),
+                    "abstract": paper.get("abstract"),
+                    "year": paper.get("year"),
+                    "doi": paper.get("doi"),
+                    "paper_url": paper.get("paper_url"),
+                    "doi_url": paper.get("doi_url"),
+                    "pdf_url": paper.get("pdf_url"),
+                    "citations": paper.get("citations") or 0,
+                    "is_selected": True,
+                }
+            )
+        if not rows:
+            return []
+        result = self._request("POST", "project_papers", json_body=rows)
+        return result if isinstance(result, list) else [result]
+
+    def list_project_papers(self, project_id: int, selected_only: bool = False) -> List[Dict[str, Any]]:
+        params = {"project_id": f"eq.{project_id}", "select": "*", "order": "citations.desc"}
+        if selected_only:
+            params["is_selected"] = "eq.true"
+        result = self._request("GET", "project_papers", params=params)
+        return result if isinstance(result, list) else []
+
+    def set_project_papers_selection(self, project_id: int, selected_ids: List[int]) -> None:
+        self._request(
+            "PATCH",
+            "project_papers",
+            params={"project_id": f"eq.{project_id}"},
+            json_body={"is_selected": False},
+        )
+        if selected_ids:
+            self._request(
+                "PATCH",
+                "project_papers",
+                params={"project_id": f"eq.{project_id}", "id": f"in.({','.join(str(value) for value in selected_ids)})"},
+                json_body={"is_selected": True},
+            )
+
+    def update_project_latest_outputs(self, project_id: int, updates: Dict[str, Any]) -> Dict[str, Any]:
+        return self.update_project(project_id, updates)
+
+    def insert_version(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        result = self._request("POST", "version", json_body=payload)
+        return self._single(result)
+
+    def list_versions(self, project_id: int) -> List[Dict[str, Any]]:
+        result = self._request("GET", "version", params={"project_id": f"eq.{project_id}", "order": "created_at.desc"})
+        return result if isinstance(result, list) else []
+
+    def get_version(self, version_id: int) -> Dict[str, Any]:
+        result = self._request("GET", "version", params={"id": f"eq.{version_id}", "select": "*"})
+        return self._single(result)
+
+    def set_current_version(self, project_id: int, version_id: int) -> None:
+        self._request(
+            "PATCH",
+            "version",
+            params={"project_id": f"eq.{project_id}"},
+            json_body={"is_current": False},
+        )
+        self._request(
+            "PATCH",
+            "version",
+            params={"id": f"eq.{version_id}"},
+            json_body={"is_current": True},
+        )
+
+
+supabase_service = SupabaseService()

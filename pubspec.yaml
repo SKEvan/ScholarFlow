@@ -38,6 +38,7 @@ dependencies:
   flutter_svg: ^2.3.0
   flutter_screenutil: ^5.9.0
   http: ^1.4.0
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

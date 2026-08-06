@@ -1,6 +1,13 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+DROP TABLE IF EXISTS public.project_papers CASCADE;
+DROP TABLE IF EXISTS public.version CASCADE;
+DROP TABLE IF EXISTS public.collaboration_requests CASCADE;
+DROP TABLE IF EXISTS public.project_members CASCADE;
+DROP TABLE IF EXISTS public.projects CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
 CREATE TABLE public.profiles (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   full_name text,
@@ -19,6 +26,12 @@ CREATE TABLE public.projects (
   progress numeric,
   start_date date,
   deadline date,
+  latest_summary jsonb,
+  latest_comparison jsonb,
+  latest_research_gap jsonb,
+  latest_literature_review jsonb,
+  latest_papers jsonb,
+  current_version_id bigint,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp without time zone,
   CONSTRAINT projects_pkey PRIMARY KEY (id),
@@ -77,6 +90,7 @@ CREATE TABLE public.project_papers (
   doi_url text,
   pdf_url text,
   citations smallint,
+  is_selected boolean,
   CONSTRAINT project_papers_pkey PRIMARY KEY (id),
   CONSTRAINT project_papers_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id)
 );

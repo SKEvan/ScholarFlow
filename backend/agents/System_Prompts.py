@@ -56,6 +56,9 @@ Rules:
 Requested output type:
 {output_type}
 
+User prompt:
+{user_prompt}
+
 Abstracts JSON:
 {abstracts_json}
 """
@@ -84,6 +87,9 @@ Rules:
 Requested output type:
 {output_type}
 
+User prompt:
+{user_prompt}
+
 Abstracts JSON:
 {abstracts_json}
 """
@@ -111,6 +117,9 @@ Rules:
 
 Requested output type:
 {output_type}
+
+User prompt:
+{user_prompt}
 
 Abstracts JSON:
 {abstracts_json}
@@ -141,6 +150,9 @@ Rules:
 
 Requested output type:
 {output_type}
+
+User prompt:
+{user_prompt}
 
 Abstracts JSON:
 {abstracts_json}

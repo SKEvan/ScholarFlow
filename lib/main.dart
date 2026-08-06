@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'services/backend_config.dart';
 import 'theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/landing_screen.dart';
@@ -20,7 +22,9 @@ import 'screens/summarizer_review_screen.dart';
 import 'screens/comparison_gap_screen.dart';
 import 'screens/literature_review_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BackendConfig.load();
   runApp(const ScholarFlowApp());
 }
 

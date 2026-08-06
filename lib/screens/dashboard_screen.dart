@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/add_to_project_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -359,14 +358,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showAddToProjectSheet(context);
-        },
-        backgroundColor: theme.colorScheme.secondary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _activeTab,

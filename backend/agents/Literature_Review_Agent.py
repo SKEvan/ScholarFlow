@@ -27,22 +27,28 @@ MAX_LITERATURE_REVIEW_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-def _build_prompt(abstracts: List[Dict[str, str]], desired_output_type: str) -> str:
+def _build_prompt(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str,
+    user_prompt: str = "",
+) -> str:
     return LITERATURE_REVIEW_PROMPT.format(
         abstracts_json=json.dumps(abstracts, ensure_ascii=False, indent=2),
         output_type=desired_output_type,
+        user_prompt=user_prompt or "No additional prompt provided.",
     )
 
 
 def _run_literature_review_from_abstracts(
     abstracts: List[Dict[str, str]],
     desired_output_type: str,
+    user_prompt: str = "",
 ) -> Dict[str, Any]:
     if not abstracts:
         raise ValueError("No abstracts found. Provide paper abstracts first.")
 
     output_type = (desired_output_type or "Narrative Review").strip() or "Narrative Review"
-    prompt = _build_prompt(abstracts, output_type)
+    prompt = _build_prompt(abstracts, output_type, user_prompt)
 
     last_error: Optional[Exception] = None
     literature_review: Dict[str, Any] = {}
@@ -73,8 +79,9 @@ def run_literature_review_from_payload(
     abstracts: List[Dict[str, str]],
     desired_output_type: str = "Narrative Review",
     persist: bool = True,
+    user_prompt: str = "",
 ) -> Dict[str, Any]:
-    literature_review = _run_literature_review_from_abstracts(abstracts, desired_output_type)
+    literature_review = _run_literature_review_from_abstracts(abstracts, desired_output_type, user_prompt)
 
     if persist:
         # JSON state update: persist the direct literature review response to workflow.json.
@@ -82,6 +89,7 @@ def run_literature_review_from_payload(
             {
                 "abstracts": abstracts,
                 "desired_output_type": desired_output_type,
+                "user_prompt": user_prompt,
                 "literature_review": literature_review,
                 "current_agent": "literature_review",
                 "status": "literature_review_complete",
@@ -94,7 +102,8 @@ def run_literature_review_from_state() -> Dict[str, Any]:
     state = load_workflow_state()
     abstracts = normalize_abstracts(state.get("abstracts") or state.get("papers") or [])
     desired_output_type = state.get("desired_output_type") or "Narrative Review"
-    return run_literature_review_from_payload(abstracts, desired_output_type, persist=True)
+    user_prompt = state.get("user_prompt") or ""
+    return run_literature_review_from_payload(abstracts, desired_output_type, persist=True, user_prompt=user_prompt)
 
 
 if __name__ == "__main__":

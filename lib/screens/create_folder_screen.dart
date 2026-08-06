@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../services/backend_config.dart';
 import '../services/backend_api.dart';
 
 class CreateFolderScreen extends StatefulWidget {
@@ -22,13 +21,6 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
   String _selectedStatus = 'active';
   DateTime? _startDate;
   DateTime? _deadline;
-  bool _backendPromptShown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _ensureBackendConfigured();
-  }
 
   @override
   void dispose() {
@@ -113,52 +105,6 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
     );
   }
 
-  Future<void> _showBackendDialog() async {
-    final controller = TextEditingController(text: BackendConfig.baseUrl);
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Backend URL'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'http://your-ip:8000',
-              helperText: 'Use your computer\'s LAN IP when testing on a phone.',
-            ),
-            keyboardType: TextInputType.url,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await BackendConfig.setBaseUrl(controller.text);
-                if (context.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _ensureBackendConfigured() async {
-    await BackendConfig.load();
-    if (_backendPromptShown || BackendConfig.hasCustomBaseUrl || !mounted) {
-      return;
-    }
-    _backendPromptShown = true;
-    await Future<void>.delayed(Duration.zero);
-    await _showBackendDialog();
-  }
-
   Future<void> _createProject() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
@@ -171,19 +117,6 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
     setState(() {
       _isCreating = true;
     });
-
-    await BackendConfig.load();
-    if (!BackendConfig.hasCustomBaseUrl) {
-      await _showBackendDialog();
-      if (!BackendConfig.hasCustomBaseUrl) {
-        if (mounted) {
-          setState(() {
-            _isCreating = false;
-          });
-        }
-        return;
-      }
-    }
 
     try {
       final result = await BackendApi.createProjectAndResearch(

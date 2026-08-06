@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../services/backend_config.dart';
 import '../services/backend_api.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -12,30 +11,16 @@ class ProjectsScreen extends StatefulWidget {
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
   late Future<List<dynamic>> _projectsFuture;
-  bool _backendPromptShown = false;
 
   @override
   void initState() {
     super.initState();
-    _projectsFuture = _initializeProjects();
-  }
-
-  Future<List<dynamic>> _initializeProjects() async {
-    await BackendConfig.load();
-    if (!_backendPromptShown && !BackendConfig.hasCustomBaseUrl && mounted) {
-      _backendPromptShown = true;
-      await Future<void>.delayed(Duration.zero);
-      await _showBackendDialog();
-    }
-    if (!BackendConfig.hasCustomBaseUrl) {
-      throw Exception('Backend URL is required to load projects.');
-    }
-    return BackendApi.listProjects();
+    _projectsFuture = BackendApi.listProjects();
   }
 
   Future<void> _refreshProjects() async {
     setState(() {
-      _projectsFuture = _initializeProjects();
+      _projectsFuture = BackendApi.listProjects();
     });
     await _projectsFuture;
   }
@@ -46,43 +31,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       arguments: {
         'projectId': project['id'],
         'projectTitle': project['title'] ?? 'Project',
-      },
-    );
-  }
-
-  Future<void> _showBackendDialog() async {
-    final controller = TextEditingController(text: BackendConfig.baseUrl);
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Backend URL'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'http://your-ip:8000',
-              helperText: 'Use your computer\'s LAN IP when testing on a phone.',
-            ),
-            keyboardType: TextInputType.url,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await BackendConfig.setBaseUrl(controller.text);
-                if (context.mounted) {
-                  Navigator.of(dialogContext).pop();
-                  await _refreshProjects();
-                }
-              },
-              child: const Text('Save & Retry'),
-            ),
-          ],
-        );
       },
     );
   }
@@ -138,12 +86,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         Text(
                           errorText,
                           textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: _showBackendDialog,
-                          icon: const Icon(Icons.link),
-                          label: const Text('Set backend URL'),
                         ),
                       ],
                     ),

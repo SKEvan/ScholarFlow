@@ -3,21 +3,14 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-import 'backend_config.dart';
-
 class BackendApi {
   BackendApi._();
 
-  static Future<String> get baseUrl async {
-    await BackendConfig.load();
-    return BackendConfig.baseUrl;
-  }
+  static const String baseUrl = 'https://scholarflow-i4bq.onrender.com';
 
-  static Future<String> _connectionHint(Object error) async {
-    final host = Uri.tryParse(await baseUrl)?.host ?? '';
-    final isLocalHost = host == '127.0.0.1' || host == 'localhost' || host == '10.0.2.2';
-    if (error is SocketException && isLocalHost) {
-      return 'Backend not reachable from this device. Set BACKEND_BASE_URL to https://scholarflow-i4bq.onrender.com or deploy the backend URL in app settings.';
+  static String _connectionHint(Object error) {
+    if (error is SocketException) {
+      return 'Backend not reachable at $baseUrl. Please verify the Render service is live.';
     }
     return error.toString();
   }
@@ -26,9 +19,9 @@ class BackendApi {
     try {
       return await request();
     } on SocketException catch (error) {
-      throw Exception(await _connectionHint(error));
+      throw Exception(_connectionHint(error));
     } on http.ClientException catch (error) {
-      throw Exception(await _connectionHint(error));
+      throw Exception(_connectionHint(error));
     }
   }
 
@@ -61,7 +54,7 @@ class BackendApi {
 
     final response = await _send(
       () => http.post(
-        Uri.parse('${BackendConfig.baseUrl}/projects/research'),
+        Uri.parse('$baseUrl/projects/research'),
         headers: const {
           'Content-Type': 'application/json',
         },
@@ -82,7 +75,7 @@ class BackendApi {
   }
 
   static Future<List<Map<String, dynamic>>> listProjects() async {
-    final response = await _send(() => http.get(Uri.parse('${BackendConfig.baseUrl}/projects')));
+    final response = await _send(() => http.get(Uri.parse('$baseUrl/projects')));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
@@ -98,7 +91,7 @@ class BackendApi {
   }
 
   static Future<Map<String, dynamic>> getProjectRepository(int projectId) async {
-    final response = await _send(() => http.get(Uri.parse('${BackendConfig.baseUrl}/projects/$projectId/repository')));
+    final response = await _send(() => http.get(Uri.parse('$baseUrl/projects/$projectId/repository')));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
@@ -121,7 +114,7 @@ class BackendApi {
   }) async {
     final response = await _send(
       () => http.post(
-        Uri.parse('${BackendConfig.baseUrl}$endpoint'),
+        Uri.parse('$baseUrl$endpoint'),
       headers: const {
         'Content-Type': 'application/json',
       },
@@ -153,7 +146,7 @@ class BackendApi {
   }) async {
     final response = await _send(
       () => http.post(
-        Uri.parse('${BackendConfig.baseUrl}/projects/$projectId/versions/save'),
+        Uri.parse('$baseUrl/projects/$projectId/versions/save'),
       headers: const {
         'Content-Type': 'application/json',
       },
@@ -182,7 +175,7 @@ class BackendApi {
   }) async {
     final response = await _send(
       () => http.post(
-        Uri.parse('${BackendConfig.baseUrl}/projects/$projectId/versions/restore'),
+        Uri.parse('$baseUrl/projects/$projectId/versions/restore'),
       headers: const {
         'Content-Type': 'application/json',
       },

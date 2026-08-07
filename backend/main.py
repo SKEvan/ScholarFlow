@@ -35,8 +35,8 @@ class AbstractItem(BaseModel):
 class AgentRequest(BaseModel):
     abstracts: list[AbstractItem] = Field(default_factory=list)
     desired_output_type: str = Field(default="")
-    project_id: int | None = None
-    selected_paper_ids: list[int] = Field(default_factory=list)
+    project_id: str | None = None           # UUID → str
+    selected_paper_ids: list[str] = Field(default_factory=list)  # UUID → str
     user_prompt: str = Field(default="")
 
 
@@ -47,7 +47,7 @@ class ProjectResearchRequest(BaseModel):
     start_date: str | None = None
     deadline: str | None = None
     desired_output_type: str = Field(default="")
-    owner_id: int | None = None
+    owner_id: str | None = None             # UUID → str
     collaborators: list[str] = Field(default_factory=list)
 
 
@@ -57,7 +57,7 @@ class SaveVersionRequest(BaseModel):
 
 
 class RestoreVersionRequest(BaseModel):
-    version_id: int
+    version_id: str                         # UUID → str
 
 
 class SignUpRequest(BaseModel):
@@ -86,12 +86,12 @@ class CompleteProfileRequest(BaseModel):
     role: str = Field(default="")
 
 
-def _load_project_abstracts(project_id: int, selected_paper_ids: list[int] | None = None) -> list[dict]:
+def _load_project_abstracts(project_id: str, selected_paper_ids: list[str] | None = None) -> list[dict]:
     selected_ids = selected_paper_ids or []
     papers = supabase_service.list_project_papers(project_id, selected_only=bool(selected_ids))
     if selected_ids:
-        selected_set = {int(value) for value in selected_ids}
-        papers = [paper for paper in papers if int(paper.get("id") or 0) in selected_set]
+        selected_set = set(selected_ids)    # no int() cast — compare UUID strings directly
+        papers = [paper for paper in papers if paper.get("id") in selected_set]
     elif not papers:
         papers = supabase_service.list_project_papers(project_id, selected_only=False)
 
@@ -335,7 +335,7 @@ def research_project(payload: ProjectResearchRequest) -> dict:
         owner_id=payload.owner_id,
     )
     supabase_service.create_collaboration_requests(
-        project["id"],
+        project["id"],                      # UUID string — no int() cast
         payload.collaborators,
         requested_by=payload.owner_id,
     )
@@ -371,7 +371,7 @@ def research_project(payload: ProjectResearchRequest) -> dict:
 
 
 @app.get("/projects/{project_id}/repository")
-def project_repository(project_id: int) -> dict:
+def project_repository(project_id: str) -> dict:   # UUID → str
     _ensure_supabase()
     project = supabase_service.get_project(project_id)
     papers = supabase_service.list_project_papers(project_id)
@@ -386,7 +386,7 @@ def list_projects() -> dict:
 
 
 @app.post("/projects/{project_id}/versions/save")
-def save_version(project_id: int, payload: SaveVersionRequest) -> dict:
+def save_version(project_id: str, payload: SaveVersionRequest) -> dict:    # UUID → str
     _ensure_supabase()
     project = supabase_service.get_project(project_id)
     selected_papers = supabase_service.list_project_papers(project_id, selected_only=True)
@@ -406,13 +406,13 @@ def save_version(project_id: int, payload: SaveVersionRequest) -> dict:
         raise HTTPException(status_code=400, detail="Version name is required.")
     supabase_service.update_project(project_id, {"current_version_id": None})
     saved = supabase_service.insert_version(latest_version)
-    supabase_service.set_current_version(project_id, int(saved["id"]))
-    supabase_service.update_project(project_id, {"current_version_id": int(saved["id"])})
+    supabase_service.set_current_version(project_id, saved["id"])          # no int() cast
+    supabase_service.update_project(project_id, {"current_version_id": saved["id"]})  # no int() cast
     return saved
 
 
 @app.post("/projects/{project_id}/versions/restore")
-def restore_version(project_id: int, payload: RestoreVersionRequest) -> dict:
+def restore_version(project_id: str, payload: RestoreVersionRequest) -> dict:  # UUID → str
     _ensure_supabase()
     version = supabase_service.get_version(payload.version_id)
     if not version:
@@ -428,7 +428,7 @@ def restore_version(project_id: int, payload: RestoreVersionRequest) -> dict:
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
-    selected_ids = [int(paper.get("id")) for paper in (version.get("papers") or []) if paper.get("id")]
+    selected_ids = [paper.get("id") for paper in (version.get("papers") or []) if paper.get("id")]  # no int() cast
     supabase_service.set_project_papers_selection(project_id, selected_ids)
     supabase_service.set_current_version(project_id, payload.version_id)
     supabase_service.update_project(project_id, {"current_version_id": payload.version_id})

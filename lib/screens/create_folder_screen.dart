@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/backend_api.dart';
+import '../services/user_session.dart';
 
 class CreateFolderScreen extends StatefulWidget {
   const CreateFolderScreen({super.key});
@@ -127,6 +128,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
 
       final result = await BackendApi.createProjectAndResearch(
         title,
+        ownerId: UserSession.userId,
         description: _descriptionController.text.trim(),
         status: _selectedStatus,
         startDate: _formatDate(_startDate),

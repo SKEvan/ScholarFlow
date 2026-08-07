@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:scholar_flow/services/backend_api.dart';
+import 'package:scholar_flow/services/user_session.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -49,7 +50,8 @@ class _SignInScreenState extends State<SignInScreen> {
         return;
       }
       if (event.event == AuthChangeEvent.signedIn || event.event == AuthChangeEvent.initialSession) {
-        final status = await BackendApi.profileStatus(session!.user.id);
+        await UserSession.setUserId(session!.user.id);
+        final status = await BackendApi.profileStatus(session.user.id);
         if (!mounted) {
           return;
         }
@@ -78,6 +80,8 @@ class _SignInScreenState extends State<SignInScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      final userId = (result['user'] as Map?)?['id'] as String?;
+      await UserSession.setUserId(userId);
       if (!mounted) {
         return;
       }

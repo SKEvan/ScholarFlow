@@ -200,8 +200,11 @@ class BackendApi {
     throw Exception('Unexpected backend response shape.');
   }
 
-  static Future<List<Map<String, dynamic>>> listProjects() async {
-    final response = await _send(() => http.get(Uri.parse('$baseUrl/projects')));
+  static Future<List<Map<String, dynamic>>> listProjects({String? ownerId}) async {
+    final uri = Uri.parse('$baseUrl/projects').replace(
+      queryParameters: ownerId != null ? {'owner_id': ownerId} : null,
+    );
+    final response = await _send(() => http.get(uri));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Backend request failed: ${response.statusCode} ${response.body}');

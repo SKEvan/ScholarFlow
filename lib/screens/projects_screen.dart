@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/backend_api.dart';
+import '../services/user_session.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -12,15 +13,17 @@ class ProjectsScreen extends StatefulWidget {
 class _ProjectsScreenState extends State<ProjectsScreen> {
   late Future<List<dynamic>> _projectsFuture;
 
+  String? get _currentUserId => UserSession.userId;
+
   @override
   void initState() {
     super.initState();
-    _projectsFuture = BackendApi.listProjects();
+    _projectsFuture = BackendApi.listProjects(ownerId: _currentUserId);
   }
 
   Future<void> _refreshProjects() async {
     setState(() {
-      _projectsFuture = BackendApi.listProjects();
+      _projectsFuture = BackendApi.listProjects(ownerId: _currentUserId);
     });
     await _projectsFuture;
   }

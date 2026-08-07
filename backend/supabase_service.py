@@ -144,8 +144,11 @@ class SupabaseService:
         result = self._request("POST", "projects", json_body=payload)
         return self._single(result)
 
-    def list_projects(self) -> List[Dict[str, Any]]:
-        result = self._request("GET", "projects", params={"select": "*", "order": "created_at.desc"})
+    def list_projects(self, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {"select": "*", "order": "created_at.desc"}
+        if owner_id:
+            params["owner_id"] = f"eq.{owner_id}"
+        result = self._request("GET", "projects", params=params)
         return result if isinstance(result, list) else []
 
     def get_project(self, project_id: str) -> Dict[str, Any]:    # UUID → str

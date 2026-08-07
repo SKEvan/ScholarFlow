@@ -380,9 +380,9 @@ def project_repository(project_id: str) -> dict:   # UUID → str
 
 
 @app.get("/projects")
-def list_projects() -> dict:
+def list_projects(owner_id: str | None = None) -> dict:
     _ensure_supabase()
-    return {"projects": supabase_service.list_projects()}
+    return {"projects": supabase_service.list_projects(owner_id=owner_id)}
 
 
 @app.post("/projects/{project_id}/versions/save")

@@ -43,15 +43,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     },
   ];
 
-  int? _projectId;
+  String? _projectId;                              // UUID → String? (was int?)
   String _projectTitle = 'Project';
   bool _isLoading = false;
   bool _isSavingVersion = false;
 
   List<Map<String, dynamic>> _projectPapers = [];
   List<Map<String, dynamic>> _versions = [];
-  Set<int> _selectedPaperIds = <int>{};
-  final Set<int> _expandedPaperIds = <int>{};
+  Set<String> _selectedPaperIds = <String>{};      // UUID → Set<String> (was Set<int>)
+  final Set<String> _expandedPaperIds = <String>{}; // UUID → Set<String> (was Set<int>)
 
   String _selectedAiTool = 'Generate Summary';
   String _selectedAiChoice = 'General Summary';
@@ -72,7 +72,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map) {
       final rawProjectId = args['projectId'];
-      _projectId = rawProjectId is int ? rawProjectId : int.tryParse(rawProjectId?.toString() ?? '');
+      // UUID is already a String — just convert to string, no int parsing
+      _projectId = rawProjectId?.toString();
       final title = args['projectTitle']?.toString();
       if (title != null && title.isNotEmpty) {
         _projectTitle = title;
@@ -113,9 +114,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         }
         _projectPapers = papers;
         _versions = versions;
+        // UUID strings — no int.parse needed
         _selectedPaperIds = papers
             .where((paper) => paper['id'] != null)
-            .map<int>((paper) => int.parse(paper['id'].toString()))
+            .map<String>((paper) => paper['id'].toString())
             .toSet();
         _isLoading = false;
       });
@@ -134,18 +136,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     }
   }
 
-  Future<void> _runAgent(Map<String, dynamic> tool, String choice, String prompt, Set<int> paperIds) async {
+  Future<void> _runAgent(Map<String, dynamic> tool, String choice, String prompt, Set<String> paperIds) async {
     if (_projectId == null) {
       return;
     }
 
     try {
       final result = await BackendApi.runProjectAgent(
-        projectId: _projectId!,
+        projectId: _projectId!,                  // String UUID
         endpoint: tool['endpoint'] as String,
         desiredOutputType: choice,
         userPrompt: prompt,
-        selectedPaperIds: paperIds.toList(),
+        selectedPaperIds: paperIds.toList(),     // List<String> UUIDs
       );
 
       if (!mounted) {
@@ -175,7 +177,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Future<void> _showAiOutputChooser(Map<String, dynamic> tool) async {
     final promptController = TextEditingController(text: _promptController.text);
-    final selectedPaperIds = Set<int>.from(_selectedPaperIds);
+    final selectedPaperIds = Set<String>.from(_selectedPaperIds); // UUID → Set<String>
     String activeChoice = _selectedAiChoice;
 
     await showModalBottomSheet<void>(
@@ -254,7 +256,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         separatorBuilder: (_, index) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final paper = _projectPapers[index];
-                          final paperId = int.parse(paper['id'].toString());
+                          final paperId = paper['id'].toString(); // UUID → String, no int.parse
                           return CheckboxListTile(
                             dense: true,
                             controlAffinity: ListTileControlAffinity.leading,
@@ -361,7 +363,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                       try {
                         final version = await BackendApi.saveVersion(
-                          projectId: _projectId!,
+                          projectId: _projectId!,  // String UUID
                           snapshotName: snapshotName,
                           versionMessage: _versionNoteController.text.trim(),
                         );
@@ -422,37 +424,37 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 ...(_versions.isEmpty
                     ? <Widget>[const Text('No saved versions yet.')]
                     : _versions.map((version) {
-                    return Card(
-                      child: ListTile(
-                        title: Text(version['snapshot_name']?.toString() ?? 'Unnamed version'),
-                        subtitle: Text(version['version_message']?.toString() ?? ''),
-                        trailing: const Icon(Icons.restore),
-                        onTap: () async {
-                          try {
-                            await BackendApi.restoreVersion(
-                              projectId: _projectId!,
-                              versionId: int.parse(version['id'].toString()),
-                            );
-                            if (!mounted) {
-                              return;
-                            }
-                            Navigator.of(sheetContext).pop();
-                            await _loadRepository();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Version restored.')),
-                            );
-                          } catch (error) {
-                            if (!mounted) {
-                              return;
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Version restore failed: $error')),
-                            );
-                          }
-                        },
-                      ),
-                    );
-                  }).toList()),
+                        return Card(
+                          child: ListTile(
+                            title: Text(version['snapshot_name']?.toString() ?? 'Unnamed version'),
+                            subtitle: Text(version['version_message']?.toString() ?? ''),
+                            trailing: const Icon(Icons.restore),
+                            onTap: () async {
+                              try {
+                                await BackendApi.restoreVersion(
+                                  projectId: _projectId!,
+                                  versionId: version['id'].toString(), // UUID → String, no int.parse
+                                );
+                                if (!mounted) {
+                                  return;
+                                }
+                                Navigator.of(sheetContext).pop();
+                                await _loadRepository();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Version restored.')),
+                                );
+                              } catch (error) {
+                                if (!mounted) {
+                                  return;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Version restore failed: $error')),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      }).toList()),
               ],
             ),
           ),
@@ -462,7 +464,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   Widget _buildPaperCard(ThemeData theme, Map<String, dynamic> paper) {
-    final paperId = int.parse(paper['id'].toString());
+    final paperId = paper['id'].toString(); // UUID → String, no int.parse
     final isExpanded = _expandedPaperIds.contains(paperId);
     final abstractText = (paper['abstract'] ?? '').toString().trim();
     final paperUrl = (paper['paper_url'] ?? '').toString().trim();

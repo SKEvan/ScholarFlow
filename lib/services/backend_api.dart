@@ -27,7 +27,7 @@ class BackendApi {
 
   static Future<Map<String, dynamic>> createProjectAndResearch(
     String title, {
-    int? ownerId,
+    String? ownerId,                          // UUID → String (was int?)
     String description = '',
     String status = 'active',
     String? startDate,
@@ -49,7 +49,7 @@ class BackendApi {
       payload['deadline'] = deadline;
     }
     if (ownerId != null) {
-      payload['owner_id'] = ownerId;
+      payload['owner_id'] = ownerId;             // now a String UUID
     }
 
     final response = await _send(
@@ -216,8 +216,12 @@ class BackendApi {
     throw Exception('Unexpected backend response shape.');
   }
 
-  static Future<Map<String, dynamic>> getProjectRepository(int projectId) async {
-    final response = await _send(() => http.get(Uri.parse('$baseUrl/projects/$projectId/repository')));
+  static Future<Map<String, dynamic>> getProjectRepository(String projectId) async {
+    // UUID → String (was int). Previously sent /projects/123/repository
+    // which FastAPI rejected since the route expects a UUID string.
+    final response = await _send(
+      () => http.get(Uri.parse('$baseUrl/projects/$projectId/repository')),
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
@@ -232,24 +236,24 @@ class BackendApi {
   }
 
   static Future<Map<String, dynamic>> runProjectAgent({
-    required int projectId,
+    required String projectId,                   // UUID → String (was int)
     required String endpoint,
     required String desiredOutputType,
     required String userPrompt,
-    required List<int> selectedPaperIds,
+    required List<String> selectedPaperIds,       // UUID → List<String> (was List<int>)
   }) async {
     final response = await _send(
       () => http.post(
         Uri.parse('$baseUrl$endpoint'),
-      headers: const {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'project_id': projectId,
-        'desired_output_type': desiredOutputType,
-        'user_prompt': userPrompt,
-        'selected_paper_ids': selectedPaperIds,
-      }),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'project_id': projectId,               // String UUID
+          'desired_output_type': desiredOutputType,
+          'user_prompt': userPrompt,
+          'selected_paper_ids': selectedPaperIds, // List<String> UUIDs
+        }),
       ),
     );
 
@@ -266,20 +270,20 @@ class BackendApi {
   }
 
   static Future<Map<String, dynamic>> saveVersion({
-    required int projectId,
+    required String projectId,                   // UUID → String (was int)
     required String snapshotName,
     String versionMessage = '',
   }) async {
     final response = await _send(
       () => http.post(
         Uri.parse('$baseUrl/projects/$projectId/versions/save'),
-      headers: const {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'snapshot_name': snapshotName,
-        'version_message': versionMessage,
-      }),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'snapshot_name': snapshotName,
+          'version_message': versionMessage,
+        }),
       ),
     );
 
@@ -296,18 +300,18 @@ class BackendApi {
   }
 
   static Future<Map<String, dynamic>> restoreVersion({
-    required int projectId,
-    required int versionId,
+    required String projectId,                   // UUID → String (was int)
+    required String versionId,                   // UUID → String (was int)
   }) async {
     final response = await _send(
       () => http.post(
         Uri.parse('$baseUrl/projects/$projectId/versions/restore'),
-      headers: const {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'version_id': versionId,
-      }),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'version_id': versionId,               // String UUID
+        }),
       ),
     );
 

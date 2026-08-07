@@ -356,7 +356,7 @@ def research_project(payload: ProjectResearchRequest) -> dict:
     supabase_service.update_project_latest_outputs(
         project["id"],
         {
-            "latest_papers": papers,
+            "latest_papers": papers or [],
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
@@ -396,11 +396,11 @@ def save_version(project_id: str, payload: SaveVersionRequest) -> dict:    # UUI
         "snapshot_name": payload.snapshot_name.strip(),
         "version_message": payload.version_message.strip() or None,
         "is_current": True,
-        "summary": project.get("latest_summary"),
-        "comparison": project.get("latest_comparison"),
-        "research_gap": project.get("latest_research_gap"),
-        "literature_review": project.get("latest_literature_review"),
-        "papers": selected_papers,
+        "summary": project.get("latest_summary") or {},
+        "comparison": project.get("latest_comparison") or {},
+        "research_gap": project.get("latest_research_gap") or {},
+        "literature_review": project.get("latest_literature_review") or {},
+        "papers": selected_papers or [],
     }
     if not latest_version["snapshot_name"]:
         raise HTTPException(status_code=400, detail="Version name is required.")
@@ -420,11 +420,11 @@ def restore_version(project_id: str, payload: RestoreVersionRequest) -> dict:  #
     supabase_service.update_project_latest_outputs(
         project_id,
         {
-            "latest_summary": version.get("summary"),
-            "latest_comparison": version.get("comparison"),
-            "latest_research_gap": version.get("research_gap"),
-            "latest_literature_review": version.get("literature_review"),
-            "latest_papers": version.get("papers"),
+            "latest_summary": version.get("summary") or {},
+            "latest_comparison": version.get("comparison") or {},
+            "latest_research_gap": version.get("research_gap") or {},
+            "latest_literature_review": version.get("literature_review") or {},
+            "latest_papers": version.get("papers") or [],
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )

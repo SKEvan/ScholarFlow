@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:scholar_flow/services/backend_api.dart';
 
@@ -15,12 +18,50 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  bool _isSigningInWithGoogle = false;
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  List<String> _missingProfileFields(Map<String, dynamic>? profile) {
+    final data = profile ?? const <String, dynamic>{};
+    final requiredFields = ['full_name', 'university', 'role'];
+    return requiredFields
+        .where((field) => (data[field]?.toString().trim() ?? '').isEmpty)
+        .toList();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _authStateSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((event) async {
+      if (!mounted) {
+        return;
+      }
+      final session = event.session;
+      if (session?.user.id == null) {
+        return;
+      }
+      if (event.event == AuthChangeEvent.signedIn || event.event == AuthChangeEvent.initialSession) {
+        final status = await BackendApi.profileStatus(session!.user.id);
+        if (!mounted) {
+          return;
+        }
+        Navigator.of(context).pushReplacementNamed(
+          '/dashboard',
+          arguments: {
+            'profile': status['profile'] ?? const {},
+            'missingFields': status['missing_fields'] ?? const [],
+          },
+        );
+      }
+    });
   }
 
   Future<void> _submitForm() async {
@@ -33,14 +74,20 @@ class _SignInScreenState extends State<SignInScreen> {
     });
 
     try {
-      await BackendApi.signIn(
+      final result = await BackendApi.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pushReplacementNamed('/dashboard');
+      Navigator.of(context).pushReplacementNamed(
+        '/dashboard',
+        arguments: {
+          'profile': result['profile'] ?? const {},
+          'missingFields': _missingProfileFields((result['profile'] as Map?)?.cast<String, dynamic>()),
+        },
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -52,6 +99,33 @@ class _SignInScreenState extends State<SignInScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isSigningInWithGoogle = true;
+    });
+
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'scholarflow://login-callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign in failed: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningInWithGoogle = false;
         });
       }
     }
@@ -160,6 +234,19 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
+
+                      FilledButton.icon(
+                        onPressed: _isSigningInWithGoogle ? null : _signInWithGoogle,
+                        icon: const Icon(Icons.g_mobiledata),
+                        label: _isSigningInWithGoogle
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Continue with Google'),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Password field
                       Text(

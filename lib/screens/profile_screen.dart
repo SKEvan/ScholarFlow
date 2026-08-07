@@ -152,21 +152,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
-
-              // Research Interests
-              _buildSectionHeader(theme, 'RESEARCH INTERESTS'),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: [
-                  _buildInterestTag(theme, 'Quantum Computing'),
-                  _buildInterestTag(theme, 'AI Ethics'),
-                  _buildInterestTag(theme, 'Machine Learning'),
-                ],
-              ),
-
               const SizedBox(height: 28),
 
               // Active Projects
@@ -261,25 +246,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: theme.colorScheme.outline,
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  Widget _buildInterestTag(ThemeData theme, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.accentBlueSoft,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.1)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.secondary,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
       ),
     );
   }

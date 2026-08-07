@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/backend_api.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -8,40 +10,66 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  void _showReportsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.analytics, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Research Report'),
-            ],
-          ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Weekly Summary Metrics:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('• Papers added: 12\n• Co-author annotations: 42\n• Active reading time: 14.5 hours\n• AI assistance tokens used: 8.4k'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
+  late Future<List<Map<String, dynamic>>> _projectsFuture;
+  Map<String, dynamic> _profile = const {};
+  List<String> _missingFields = const [];
+  bool _profileLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _projectsFuture = BackendApi.listProjects();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_profileLoaded) {
+      return;
+    }
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      final profile = args['profile'];
+      if (profile is Map<String, dynamic>) {
+        _profile = profile;
+      }
+      final missingFields = args['missingFields'];
+      if (missingFields is List) {
+        _missingFields = missingFields.map((value) => value.toString()).toList();
+      }
+    }
+    _profileLoaded = true;
+  }
+
+  Future<void> _refreshProjects() async {
+    setState(() {
+      _projectsFuture = BackendApi.listProjects();
+    });
+    await _projectsFuture;
+  }
+
+  void _openProject(Map<String, dynamic> project) {
+    Navigator.of(context).pushNamed(
+      '/project-details',
+      arguments: {
+        'projectId': project['id'],
+        'projectTitle': project['title'] ?? 'Project',
       },
     );
+  }
+
+  bool get _needsProfileCompletion {
+    if (_missingFields.isNotEmpty) {
+      return true;
+    }
+    final profile = _profile;
+    final requiredFields = ['full_name', 'university', 'role'];
+    for (final field in requiredFields) {
+      if ((profile[field]?.toString().trim() ?? '').isEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -57,19 +85,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context) {
             return IconButton(
               icon: const Icon(Icons.menu, color: Colors.black),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
+              onPressed: () => Scaffold.of(context).openDrawer(),
             );
           },
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/logo.png',
-              height: 28,
-            ),
+            Image.asset('assets/logo.png', height: 28),
             const SizedBox(width: 8),
             Text(
               'ScholarFlow',
@@ -81,513 +104,286 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).pushNamed('/profile');
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundImage: const NetworkImage(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuBqb8N9ENDKM_quKjXZ3JQ_fZmTmx9m-t050uLJ6FTT7Zq2M-jlvozURB9ExLUX5DP3WYl_xwJLUXic8qmvscxvQLOE4HF_XDLh6Jokgo8jy7KrC5GS9D28MuXVGoja5m_8uDBVLx3Xc9gvUL_7bK_S1p311exG4nWrqqFq25YTYHjjA6gwzjMGxsTu-NoEAPl78Xe7slevusgjQ1DITxGi-ACP1q8h5Q2w5KLs1kX31YuLt5mCbDwWIqEy99_pu9Om0Ftlk52KXys',
-                ),
-                backgroundColor: theme.colorScheme.outlineVariant,
-              ),
-            ),
-          ),
-        ],
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: theme.colorScheme.primary),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+        child: SafeArea(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Profile'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed('/profile');
+                },
+              ),
+              if (_needsProfileCompletion)
+                ListTile(
+                  leading: const Icon(Icons.edit_note),
+                  title: const Text('Complete your profile'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed(
+                      '/complete-profile',
+                      arguments: {
+                        'profile': _profile,
+                      },
+                    );
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Logout'),
+                onTap: () => Navigator.of(context).pushReplacementNamed('/signin'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshProjects,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _projectsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 32),
+                    if (_needsProfileCompletion)
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.edit_note),
+                          title: const Text('Complete your profile'),
+                          subtitle: const Text('Add the missing profile details to finish setup.'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            '/complete-profile',
+                            arguments: {
+                              'profile': _profile,
+                            },
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                );
+              }
+
+              if (snapshot.hasError) {
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 80),
+                    if (_needsProfileCompletion) ...[
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.edit_note),
+                          title: const Text('Complete your profile'),
+                          subtitle: const Text('Add the missing profile details to finish setup.'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            '/complete-profile',
+                            arguments: {
+                              'profile': _profile,
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      'Running Projects',
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Could not load projects: ${snapshot.error}'),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _refreshProjects,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).pushNamed('/create-folder'),
+                      icon: const Icon(Icons.add),
+                      label: const Text('New Project'),
+                    ),
+                  ],
+                );
+              }
+
+              final projects = snapshot.data ?? const <Map<String, dynamic>>[];
+
+              if (projects.isEmpty) {
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (_needsProfileCompletion) ...[
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.edit_note),
+                          title: const Text('Complete your profile'),
+                          subtitle: const Text('Add the missing profile details to finish setup.'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            '/complete-profile',
+                            arguments: {
+                              'profile': _profile,
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      'Running Projects',
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('No running projects yet.'),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).pushNamed('/create-folder'),
+                      icon: const Icon(Icons.add),
+                      label: const Text('New Project'),
+                    ),
+                  ],
+                );
+              }
+
+              return ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundImage: NetworkImage(
-                      'https://lh3.googleusercontent.com/aida-public/AB6AXuBqb8N9ENDKM_quKjXZ3JQ_fZmTmx9m-t050uLJ6FTT7Zq2M-jlvozURB9ExLUX5DP3WYl_xwJLUXic8qmvscxvQLOE4HF_XDLh6Jokgo8jy7KrC5GS9D28MuXVGoja5m_8uDBVLx3Xc9gvUL_7bK_S1p311exG4nWrqqFq25YTYHjjA6gwzjMGxsTu-NoEAPl78Xe7slevusgjQ1DITxGi-ACP1q8h5Q2w5KLs1kX31YuLt5mCbDwWIqEy99_pu9Om0Ftlk52KXys',
+                  if (_needsProfileCompletion) ...[
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.edit_note),
+                        title: const Text('Complete your profile'),
+                        subtitle: const Text('Add the missing profile details to finish setup.'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).pushNamed(
+                          '/complete-profile',
+                          arguments: {
+                            'profile': _profile,
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Running Projects',
+                          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(context).pushNamed('/create-folder'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('New Project'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...projects.map(
+                    (project) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _ProjectCard(
+                        project: project,
+                        onTap: () => _openProject(project),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Dr. Julian Vance',
-                    style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontSize: 18),
-                  ),
-                  Text(
-                    'Stanford University',
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
-                  ),
                 ],
-              ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectCard extends StatelessWidget {
+  const _ProjectCard({required this.project, required this.onTap});
+
+  final Map<String, dynamic> project;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = project['title']?.toString() ?? 'Untitled Project';
+    final description = project['description']?.toString() ?? '';
+    final status = project['status']?.toString() ?? 'active';
+    final paperCount = project['paper_count'] ?? 0;
+    final versionCount = project['version_count'] ?? 0;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Chip(label: Text(status)),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.search),
-              title: const Text('Discover'),
-              onTap: () => Navigator.of(context).pop(),
-            ),
-            ListTile(
-              leading: const Icon(Icons.group),
-              title: const Text('Collaboration'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/add-collaborator');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/profile');
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () => Navigator.of(context).pushReplacementNamed('/signin'),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(description, style: TextStyle(color: theme.colorScheme.outline.withValues(alpha: 0.9))),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _StatChip(label: 'Papers', value: paperCount.toString()),
+                const SizedBox(width: 8),
+                _StatChip(label: 'Versions', value: versionCount.toString()),
+              ],
             ),
           ],
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Search field trigger
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search for papers, researchers, or topics',
-                  hintStyle: TextStyle(color: theme.colorScheme.outline.withOpacity(0.5)),
-                  prefixIcon: const Icon(Icons.search),
-                  fillColor: Colors.white,
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                  ),
-                ),
-                onSubmitted: (query) {
-                  if (query.trim().isNotEmpty) {
-                    Navigator.of(context).pushNamed(
-                      '/search-results',
-                      arguments: query.trim(),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Research Summary metrics
-              Text(
-                'OVERVIEW',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Research Summary',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricCard(
-                      theme,
-                      icon: Icons.description,
-                      value: '84',
-                      label: 'Papers',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricCard(
-                      theme,
-                      icon: Icons.group,
-                      value: '18',
-                      label: 'Collabs',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricCard(
-                      theme,
-                      icon: Icons.timer,
-                      value: '248',
-                      label: 'Hours',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Quick Actions Grid
-              Text(
-                'QUICK ACTIONS',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.2,
-                children: [
-                  _buildQuickAction(
-                    theme,
-                    icon: Icons.add_circle,
-                    title: 'New Project',
-                    bgColor: theme.colorScheme.secondaryContainer.withOpacity(0.15),
-                    iconColor: theme.colorScheme.secondary,
-                    onTap: () => Navigator.of(context).pushNamed('/create-folder'),
-                  ),
-                  _buildQuickAction(
-                    theme,
-                    icon: Icons.analytics,
-                    title: 'Reports',
-                    bgColor: theme.colorScheme.surfaceContainerHigh,
-                    iconColor: theme.colorScheme.secondary,
-                    onTap: () => Navigator.of(context).pushNamed('/insights'),
-                  ),
-                  _buildQuickAction(
-                    theme,
-                    icon: Icons.groups,
-                    title: 'Collaboration',
-                    bgColor: theme.colorScheme.surfaceContainerHigh,
-                    iconColor: theme.colorScheme.secondary,
-                    onTap: () => Navigator.of(context).pushNamed('/add-collaborator'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Running Projects Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Running Projects',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed('/create-folder'),
-                    child: Text(
-                      'NEW PROJECT',
-                      style: TextStyle(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildProjectCard(
-                theme,
-                category: 'Artificial Intelligence',
-                title: 'Ethical AI Framework',
-                status: 'ACTIVE',
-                progress: 0.65,
-                statusBg: theme.colorScheme.secondary.withOpacity(0.1),
-                statusTextColor: theme.colorScheme.secondary,
-                actionLabel: 'RESUME',
-                projectId: 'ethical-ai',
-              ),
-              const SizedBox(height: 12),
-              _buildProjectCard(
-                theme,
-                category: 'Neural Science',
-                title: 'Quantum Neural Networks',
-                status: 'REVIEW',
-                progress: 0.92,
-                statusBg: Colors.orange[50]!,
-                statusTextColor: Colors.orange[700]!,
-                actionLabel: 'VIEW',
-                projectId: 'genomics', // matches one of the project arguments
-              ),
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
     );
   }
+}
 
-  Widget _buildMetricCard(
-    ThemeData theme, {
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(999),
       ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Icon(icon, color: theme.colorScheme.secondary, size: 22),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(
-    ThemeData theme, {
-    required IconData icon,
-    required String title,
-    required Color bgColor,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.2),
-            ),
-          ),
-          padding: const EdgeInsets.all(10.0),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProjectCard(
-    ThemeData theme, {
-    required String category,
-    required String title,
-    required String status,
-    required double progress,
-    required Color statusBg,
-    required Color statusTextColor,
-    required String actionLabel,
-    required String projectId,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category.toUpperCase(),
-                    style: TextStyle(
-                      color: theme.colorScheme.secondary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: statusTextColor,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Current Progress',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  _buildAvatar('JD'),
-                  Transform.translate(
-                    offset: const Offset(-6, 0),
-                    child: _buildAvatar('AK'),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(-12, 0),
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: theme.colorScheme.secondary,
-                      child: const Text(
-                        '+2',
-                        style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/project-details', arguments: projectId);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                  foregroundColor: theme.colorScheme.secondary,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  actionLabel,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatar(String initials) {
-    return CircleAvatar(
-      radius: 12,
-      backgroundColor: Colors.grey[200],
-      child: Text(
-        initials,
-        style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black),
-      ),
+      child: Text('$label: $value'),
     );
   }
 }

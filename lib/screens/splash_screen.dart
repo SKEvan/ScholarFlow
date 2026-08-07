@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/supabase_runtime.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -47,10 +50,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate to Landing screen after 3 seconds
+    // Navigate based on existing session after startup.
     _timer = Timer(const Duration(seconds: 4), () {
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/landing');
+        final session = isSupabaseReady() ? tryGetSupabaseClient()?.auth.currentSession : null;
+        Navigator.of(context).pushReplacementNamed(session == null ? '/landing' : '/dashboard');
       }
     });
   }

@@ -39,6 +39,7 @@ dependencies:
   flutter_screenutil: ^5.9.0
   http: ^1.4.0
   shared_preferences: ^2.3.2
+  supabase_flutter: ^2.8.0
 
 dev_dependencies:
   flutter_test:

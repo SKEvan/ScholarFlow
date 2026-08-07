@@ -16,7 +16,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _avatarUrlController = TextEditingController();
   final _emailController = TextEditingController();
   final _universityController = TextEditingController();
-  final _researchInterestController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
@@ -28,7 +27,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _avatarUrlController.dispose();
     _emailController.dispose();
     _universityController.dispose();
-    _researchInterestController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -50,7 +48,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         avatarUrl: _avatarUrlController.text.trim(),
         university: _universityController.text.trim(),
         role: _selectedRole ?? '',
-        researchInterest: _researchInterestController.text.trim(),
       );
       if (!mounted) {
         return;
@@ -245,17 +242,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             _selectedRole = val;
                           });
                         },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Research Interest
-                      _buildLabel(theme, 'PRIMARY RESEARCH INTEREST'),
-                      TextFormField(
-                        controller: _researchInterestController,
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. Quantum Computing',
-                          prefixIcon: Icon(Icons.search),
-                        ),
                       ),
                       const SizedBox(height: 16),
 

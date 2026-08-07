@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS public.project_members CASCADE;
 DROP TABLE IF EXISTS public.projects CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
@@ -15,7 +18,8 @@ CREATE TABLE public.profiles (
   university text,
   role text,
   created_at timestamp without time zone,
-  CONSTRAINT profiles_pkey PRIMARY KEY (id)
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.projects (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -35,7 +39,8 @@ CREATE TABLE public.projects (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp without time zone,
   CONSTRAINT projects_pkey PRIMARY KEY (id),
-  CONSTRAINT projects_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id)
+  CONSTRAINT projects_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id),
+  CONSTRAINT projects_current_version_id_fkey FOREIGN KEY (current_version_id) REFERENCES public.version(id)
 );
 CREATE TABLE public.project_members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -94,8 +99,3 @@ CREATE TABLE public.project_papers (
   CONSTRAINT project_papers_pkey PRIMARY KEY (id),
   CONSTRAINT project_papers_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id)
 );
-
-ALTER TABLE public.projects
-ADD CONSTRAINT projects_current_version_id_fkey
-FOREIGN KEY (current_version_id)
-REFERENCES public.version(id);

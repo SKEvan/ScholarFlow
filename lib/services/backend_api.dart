@@ -81,7 +81,6 @@ class BackendApi {
     String avatarUrl = '',
     String university = '',
     String role = '',
-    String researchInterest = '',
   }) async {
     final response = await _send(
       () => http.post(
@@ -96,7 +95,6 @@ class BackendApi {
           'avatar_url': avatarUrl,
           'university': university,
           'role': role,
-          'research_interest': researchInterest,
         }),
       ),
     );
@@ -126,6 +124,66 @@ class BackendApi {
         body: jsonEncode({
           'email': email,
           'password': password,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  static Future<Map<String, dynamic>> profileStatus(String userId) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/profile-status'),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  static Future<Map<String, dynamic>> completeProfile({
+    required String userId,
+    required String fullName,
+    String avatarUrl = '',
+    String university = '',
+    String role = '',
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/complete-profile'),
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'full_name': fullName,
+          'avatar_url': avatarUrl,
+          'university': university,
+          'role': role,
         }),
       ),
     );

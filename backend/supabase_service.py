@@ -263,7 +263,6 @@ class SupabaseService:
         avatar_url: str = "",
         university: str = "",
         role: str = "",
-        research_interest: str = "",
     ) -> Dict[str, Any]:
         auth_result = self._auth_request(
             "POST",
@@ -277,7 +276,6 @@ class SupabaseService:
                         "avatar_url": avatar_url,
                         "university": university,
                         "role": role,
-                        "research_interest": research_interest,
                     }
                 },
             },
@@ -308,6 +306,32 @@ class SupabaseService:
                 "role": role or None,
             },
         }
+
+    def get_profile(self, user_id: str) -> Dict[str, Any]:
+        result = self._request("GET", "profiles", params={"id": f"eq.{user_id}", "select": "*"})
+        return self._single(result)
+
+    def upsert_profile(self, user_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        row = {"id": user_id}
+        row.update(payload)
+        result = self._request(
+            "POST",
+            "profiles",
+            params={"on_conflict": "id"},
+            json_body=row,
+            prefer="resolution=merge-duplicates,return=representation",
+        )
+        return self._single(result)
+
+    @staticmethod
+    def profile_missing_fields(profile: Dict[str, Any]) -> list[str]:
+        required_fields = ["full_name", "university", "role"]
+        missing = []
+        for field in required_fields:
+            value = str(profile.get(field) or "").strip()
+            if not value:
+                missing.append(field)
+        return missing
 
     def sign_in_user(self, *, email: str, password: str) -> Dict[str, Any]:
         auth_result = self._auth_request(

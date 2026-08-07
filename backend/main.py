@@ -67,12 +67,23 @@ class SignUpRequest(BaseModel):
     avatar_url: str = Field(default="")
     university: str = Field(default="")
     role: str = Field(default="")
-    research_interest: str = Field(default="")
 
 
 class SignInRequest(BaseModel):
     email: str
     password: str
+
+
+class ProfileStatusRequest(BaseModel):
+    user_id: str
+
+
+class CompleteProfileRequest(BaseModel):
+    user_id: str
+    full_name: str = Field(default="")
+    avatar_url: str = Field(default="")
+    university: str = Field(default="")
+    role: str = Field(default="")
 
 
 def _load_project_abstracts(project_id: int, selected_paper_ids: list[int] | None = None) -> list[dict]:
@@ -140,7 +151,6 @@ def sign_up(payload: SignUpRequest) -> dict:
             avatar_url=payload.avatar_url.strip(),
             university=payload.university.strip(),
             role=payload.role.strip(),
-            research_interest=payload.research_interest.strip(),
         )
     except SupabaseError as error:
         logger.exception("Sign up failed for %s", email)
@@ -162,6 +172,38 @@ def sign_in(payload: SignInRequest) -> dict:
     except SupabaseError as error:
         logger.exception("Sign in failed for %s", email)
         raise HTTPException(status_code=502, detail=str(error)) from error
+
+
+@app.post("/auth/profile-status")
+def profile_status(payload: ProfileStatusRequest) -> dict:
+    _ensure_supabase()
+    profile = supabase_service.get_profile(payload.user_id)
+    missing_fields = supabase_service.profile_missing_fields(profile)
+    return {
+        "profile": profile,
+        "missing_fields": missing_fields,
+        "is_complete": len(missing_fields) == 0,
+    }
+
+
+@app.post("/auth/complete-profile")
+def complete_profile(payload: CompleteProfileRequest) -> dict:
+    _ensure_supabase()
+    profile = supabase_service.upsert_profile(
+        payload.user_id,
+        {
+            "full_name": payload.full_name.strip() or None,
+            "avatar_url": payload.avatar_url.strip() or None,
+            "university": payload.university.strip() or None,
+            "role": payload.role.strip() or None,
+        },
+    )
+    missing_fields = supabase_service.profile_missing_fields(profile)
+    return {
+        "profile": profile,
+        "missing_fields": missing_fields,
+        "is_complete": len(missing_fields) == 0,
+    }
 
 
 @app.post("/agents/summary")

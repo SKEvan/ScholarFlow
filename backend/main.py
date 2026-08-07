@@ -335,7 +335,7 @@ def research_project(payload: ProjectResearchRequest) -> dict:
         owner_id=payload.owner_id,
     )
     supabase_service.create_collaboration_requests(
-        int(project["id"]),
+        project["id"],
         payload.collaborators,
         requested_by=payload.owner_id,
     )
@@ -352,9 +352,9 @@ def research_project(payload: ProjectResearchRequest) -> dict:
 
     plan = generate_search_plan(title)
     papers = run_search_from_state()
-    saved_papers = supabase_service.upsert_project_papers(int(project["id"]), papers)
+    saved_papers = supabase_service.upsert_project_papers(project["id"], papers)
     supabase_service.update_project_latest_outputs(
-        int(project["id"]),
+        project["id"],
         {
             "latest_papers": papers,
             "updated_at": datetime.now(timezone.utc).isoformat(),

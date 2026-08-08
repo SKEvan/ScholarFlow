@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/backend_api.dart';
+import '../services/user_session.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,7 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _projectsFuture = BackendApi.listProjects();
+    _projectsFuture = BackendApi.listProjects(ownerId: UserSession.userId);
   }
 
   @override
@@ -43,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _refreshProjects() async {
     setState(() {
-      _projectsFuture = BackendApi.listProjects();
+      _projectsFuture = BackendApi.listProjects(ownerId: UserSession.userId);
     });
     await _projectsFuture;
   }
@@ -134,7 +135,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Logout'),
-                onTap: () => Navigator.of(context).pushReplacementNamed('/signin'),
+                onTap: () async {
+                  await UserSession.clear();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pushReplacementNamed('/signin');
+                },
               ),
             ],
           ),

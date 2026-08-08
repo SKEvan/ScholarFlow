@@ -149,7 +149,45 @@ class SupabaseService:
         if owner_id:
             params["owner_id"] = f"eq.{owner_id}"
         result = self._request("GET", "projects", params=params)
-        return result if isinstance(result, list) else []
+        projects = result if isinstance(result, list) else []
+        if not projects:
+            return projects
+
+        # Collect all project ids for bulk count queries (avoids N+1 per project).
+        project_ids = [p["id"] for p in projects if p.get("id")]
+        id_list = ",".join(project_ids)
+
+        # Paper counts.
+        paper_rows = self._request(
+            "GET",
+            "project_papers",
+            params={"project_id": f"in.({id_list})", "select": "project_id"},
+        )
+        paper_counts: Dict[str, int] = {}
+        for row in (paper_rows if isinstance(paper_rows, list) else []):
+            pid = row.get("project_id")
+            if pid:
+                paper_counts[pid] = paper_counts.get(pid, 0) + 1
+
+        # Version counts.
+        version_rows = self._request(
+            "GET",
+            "version",
+            params={"project_id": f"in.({id_list})", "select": "project_id"},
+        )
+        version_counts: Dict[str, int] = {}
+        for row in (version_rows if isinstance(version_rows, list) else []):
+            pid = row.get("project_id")
+            if pid:
+                version_counts[pid] = version_counts.get(pid, 0) + 1
+
+        # Stitch counts into each project dict.
+        for project in projects:
+            pid = project.get("id")
+            project["paper_count"] = paper_counts.get(pid, 0)
+            project["version_count"] = version_counts.get(pid, 0)
+
+        return projects
 
     def get_project(self, project_id: str) -> Dict[str, Any]:    # UUID → str
         result = self._request("GET", "projects", params={"id": f"eq.{project_id}", "select": "*"})

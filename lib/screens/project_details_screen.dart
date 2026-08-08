@@ -47,6 +47,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   String _projectTitle = 'Project';
   bool _isLoading = false;
   bool _isSavingVersion = false;
+  bool _isAgentLoading = false;
+  String _agentLoadingLabel = '';
 
   List<Map<String, dynamic>> _projectPapers = [];
   List<Map<String, dynamic>> _versions = [];
@@ -136,18 +138,25 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     }
   }
 
+  Map<String, dynamic>? _aiResultMap;
+
   Future<void> _runAgent(Map<String, dynamic> tool, String choice, String prompt, Set<String> paperIds) async {
     if (_projectId == null) {
       return;
     }
 
+    setState(() {
+      _isAgentLoading = true;
+      _agentLoadingLabel = '${tool["title"]}...';
+    });
+
     try {
       final result = await BackendApi.runProjectAgent(
-        projectId: _projectId!,                  // String UUID
+        projectId: _projectId!,
         endpoint: tool['endpoint'] as String,
         desiredOutputType: choice,
         userPrompt: prompt,
-        selectedPaperIds: paperIds.toList(),     // List<String> UUIDs
+        selectedPaperIds: paperIds.toList(),
       );
 
       if (!mounted) {
@@ -155,22 +164,27 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       }
 
       setState(() {
+        _isAgentLoading = false;
         _selectedAiTool = tool['title'] as String;
         _selectedAiChoice = choice;
         _selectedAiPrompt = prompt.isEmpty ? 'No prompt provided.' : prompt;
         _selectedAiOutput = const JsonEncoder.withIndent('  ').convert(result);
+        _aiResultMap = result;
         _selectedPaperIds = paperIds;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${tool['title']} completed and saved to the project draft state.')),
+        SnackBar(content: Text('${tool['title']} completed.')),
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
+      setState(() {
+        _isAgentLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI request failed: $error')),
+        SnackBar(content: Text('AI request failed: \$error')),
       );
     }
   }
@@ -600,8 +614,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   Widget _buildAiOutputCard(ThemeData theme) {
+    final result = _aiResultMap;
+    final hasOutput = result != null && result.isNotEmpty;
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -610,18 +625,156 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Selected AI Output', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('Tool: $_selectedAiTool', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.secondary)),
-          const SizedBox(height: 6),
-          Text('Output type: $_selectedAiChoice', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
-          const SizedBox(height: 12),
-          Text(_selectedAiOutput, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          Text(_selectedAiPrompt, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer.withOpacity(0.18),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome, color: theme.colorScheme.secondary, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    hasOutput ? '$_selectedAiTool · $_selectedAiChoice' : 'AI Output',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!hasOutput)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Run an AI tool above to see results here.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_selectedAiPrompt.isNotEmpty && _selectedAiPrompt != 'No prompt provided.')
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.person_outline, size: 14, color: theme.colorScheme.outline),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _selectedAiPrompt,
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ..._buildJsonSections(theme, result),
+                ],
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildJsonSections(ThemeData theme, Map<String, dynamic> data) {
+    final widgets = <Widget>[];
+    data.forEach((key, value) {
+      if (value == null) return;
+      final label = key
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1))
+          .join(' ');
+      widgets.add(Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            _buildJsonValue(theme, value),
+          ],
+        ),
+      ));
+    });
+    return widgets;
+  }
+
+  Widget _buildJsonValue(ThemeData theme, dynamic value) {
+    if (value is String) {
+      return Text(value, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5));
+    }
+    if (value is List) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: value.map<Widget>((item) {
+          if (item is Map<String, dynamic>) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _buildJsonSections(theme, item),
+                ),
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 7, right: 8),
+                  width: 5, height: 5,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.secondary),
+                ),
+                Expanded(child: Text(item.toString(), style: theme.textTheme.bodyMedium?.copyWith(height: 1.5))),
+              ],
+            ),
+          );
+        }).toList(),
+      );
+    }
+    if (value is Map<String, dynamic>) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: _buildJsonSections(theme, value));
+    }
+    return Text(value.toString(), style: theme.textTheme.bodyMedium);
   }
 
   @override
@@ -659,7 +812,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         child: const Icon(Icons.save),
       ),
       body: SafeArea(
-        child: _isLoading
+        child: Stack(
+          children: [
+            _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
                 onRefresh: _loadRepository,
@@ -772,6 +927,42 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
                 ),
               ),
+            // AI agent loading overlay
+            if (_isAgentLoading)
+              Container(
+                color: Colors.black.withOpacity(0.45),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          _agentLoadingLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'This may take a moment…',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

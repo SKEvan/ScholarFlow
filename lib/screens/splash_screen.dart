@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/user_session.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -51,10 +52,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     _timer = Timer(const Duration(seconds: 4), () {
       if (mounted) {
-        // Directly use Supabase.instance — no runtime wrapper needed
-        final session = Supabase.instance.client.auth.currentSession;
+        final isLoggedIn = UserSession.userId != null;
         Navigator.of(context).pushReplacementNamed(
-          session == null ? '/landing' : '/dashboard',
+          isLoggedIn ? '/dashboard' : '/landing',
         );
       }
     });

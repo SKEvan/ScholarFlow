@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'theme.dart';
+import 'services/user_session.dart';
 import 'screens/splash_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/sign_in_screen.dart';
@@ -23,14 +23,9 @@ import 'screens/comparison_gap_screen.dart';
 import 'screens/literature_review_screen.dart';
 import 'screens/complete_profile_screen.dart';
 
-const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-    await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseAnonKey);
-  }
+  await UserSession.load();
   runApp(const ScholarFlowApp());
 }
 

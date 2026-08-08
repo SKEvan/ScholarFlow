@@ -1,8 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:scholar_flow/services/backend_api.dart';
 import 'package:scholar_flow/services/user_session.dart';
 
@@ -20,7 +16,6 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isSigningInWithGoogle = false;
-  StreamSubscription<AuthState>? _authStateSubscription;
 
   List<String> _missingProfileFields(Map<String, dynamic>? profile) {
     final data = profile ?? const <String, dynamic>{};
@@ -34,36 +29,7 @@ class _SignInScreenState extends State<SignInScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _authStateSubscription?.cancel();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((event) async {
-      if (!mounted) {
-        return;
-      }
-      final session = event.session;
-      if (session?.user.id == null) {
-        return;
-      }
-      if (event.event == AuthChangeEvent.signedIn || event.event == AuthChangeEvent.initialSession) {
-        await UserSession.setUserId(session!.user.id);
-        final status = await BackendApi.profileStatus(session.user.id);
-        if (!mounted) {
-          return;
-        }
-        Navigator.of(context).pushReplacementNamed(
-          '/dashboard',
-          arguments: {
-            'profile': status['profile'] ?? const {},
-            'missingFields': status['missing_fields'] ?? const [],
-          },
-        );
-      }
-    });
   }
 
   Future<void> _submitForm() async {
@@ -109,30 +75,9 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
-    setState(() {
-      _isSigningInWithGoogle = true;
-    });
-
-    try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'scholarflow://login-callback',
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign in failed: $error')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSigningInWithGoogle = false;
-        });
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google sign-in is not configured yet.')),
+    );
   }
 
   @override

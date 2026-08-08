@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/backend_api.dart';
 
@@ -12,7 +11,6 @@ class ProjectDetailsScreen extends StatefulWidget {
 }
 
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
-  final TextEditingController _promptController = TextEditingController();
   final TextEditingController _versionNameController = TextEditingController();
   final TextEditingController _versionNoteController = TextEditingController();
 
@@ -47,22 +45,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   String _projectTitle = 'Project';
   bool _isLoading = false;
   bool _isSavingVersion = false;
-  bool _isAgentLoading = false;
-  String _agentLoadingLabel = '';
 
   List<Map<String, dynamic>> _projectPapers = [];
   List<Map<String, dynamic>> _versions = [];
-  Set<String> _selectedPaperIds = <String>{};      // UUID → Set<String> (was Set<int>)
-  final Set<String> _expandedPaperIds = <String>{}; // UUID → Set<String> (was Set<int>)
-
-  String _selectedAiTool = 'Generate Summary';
-  String _selectedAiChoice = 'General Summary';
-  String _selectedAiPrompt = 'Enter what you want the AI to focus on.';
-  String _selectedAiOutput = 'No AI output selected yet.';
+  Set<String> _selectedPaperIds = <String>{};
+  final Set<String> _expandedPaperIds = <String>{};
 
   @override
   void dispose() {
-    _promptController.dispose();
     _versionNameController.dispose();
     _versionNoteController.dispose();
     super.dispose();
@@ -138,191 +128,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     }
   }
 
-  Map<String, dynamic>? _aiResultMap;
+  // Map from tool title → dedicated route
+  static const _toolRoutes = {
+    'Generate Summary'  : '/agent/summary',
+    'Comparison Gap'    : '/agent/comparison',
+    'Research Gap'      : '/agent/research-gap',
+    'Literature Review' : '/agent/literature-review',
+  };
 
-  Future<void> _runAgent(Map<String, dynamic> tool, String choice, String prompt, Set<String> paperIds) async {
-    if (_projectId == null) {
-      return;
-    }
-
-    setState(() {
-      _isAgentLoading = true;
-      _agentLoadingLabel = '${tool["title"]}...';
-    });
-
-    try {
-      final result = await BackendApi.runProjectAgent(
-        projectId: _projectId!,
-        endpoint: tool['endpoint'] as String,
-        desiredOutputType: choice,
-        userPrompt: prompt,
-        selectedPaperIds: paperIds.toList(),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isAgentLoading = false;
-        _selectedAiTool = tool['title'] as String;
-        _selectedAiChoice = choice;
-        _selectedAiPrompt = prompt.isEmpty ? 'No prompt provided.' : prompt;
-        _selectedAiOutput = const JsonEncoder.withIndent('  ').convert(result);
-        _aiResultMap = result;
-        _selectedPaperIds = paperIds;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${tool['title']} completed.')),
-      );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isAgentLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI request failed: \$error')),
-      );
-    }
-  }
-
-  Future<void> _showAiOutputChooser(Map<String, dynamic> tool) async {
-    final promptController = TextEditingController(text: _promptController.text);
-    final selectedPaperIds = Set<String>.from(_selectedPaperIds); // UUID → Set<String>
-    String activeChoice = _selectedAiChoice;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 12,
-                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      tool['title'] as String,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pick an output type, select the papers, and describe what you want the AI to focus on.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: (tool['choices'] as List).map((choice) {
-                        final choiceText = choice.toString();
-                        return ChoiceChip(
-                          label: Text(choiceText),
-                          selected: activeChoice == choiceText,
-                          onSelected: (_) {
-                            setSheetState(() {
-                              activeChoice = choiceText;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Select papers', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _projectPapers.length,
-                        separatorBuilder: (_, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final paper = _projectPapers[index];
-                          final paperId = paper['id'].toString(); // UUID → String, no int.parse
-                          return CheckboxListTile(
-                            dense: true,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            value: selectedPaperIds.contains(paperId),
-                            onChanged: (checked) {
-                              setSheetState(() {
-                                if (checked == true) {
-                                  selectedPaperIds.add(paperId);
-                                } else {
-                                  selectedPaperIds.remove(paperId);
-                                }
-                              });
-                            },
-                            title: Text(
-                              paper['title']?.toString() ?? 'Untitled paper',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text('${paper['citations'] ?? 0} citations'),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: promptController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        labelText: 'What should the AI focus on?',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final prompt = promptController.text.trim();
-                          _promptController.text = prompt;
-                          Navigator.of(sheetContext).pop();
-                          await _runAgent(tool, activeChoice, prompt, selectedPaperIds);
-                        },
-                        child: const Text('Run Agent'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
+  void _openAgentScreen(Map<String, dynamic> tool) {
+    final route = _toolRoutes[tool['title'] as String];
+    if (route == null) return;
+    Navigator.of(context).pushNamed(
+      route,
+      arguments: {
+        'projectId'   : _projectId,
+        'projectTitle': _projectTitle,
+        'papers'      : _projectPapers,
       },
     );
   }
@@ -561,12 +383,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 10),
-                  Text('Metadata', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('Publication Info', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text('DOI: ${doi.isEmpty ? 'N/A' : doi}', style: theme.textTheme.bodySmall),
-                  Text('Paper URL: ${paperUrl.isEmpty ? 'N/A' : paperUrl}', style: theme.textTheme.bodySmall),
-                  Text('DOI URL: ${doiUrl.isEmpty ? 'N/A' : doiUrl}', style: theme.textTheme.bodySmall),
-                  Text('PDF URL: ${pdfUrl.isEmpty ? 'N/A' : pdfUrl}', style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 2),
+                  _buildLinkRow(theme, label: 'Paper URL', url: paperUrl),
+                  _buildLinkRow(theme, label: 'DOI Link', url: doiUrl),
+                  _buildLinkRow(theme, label: 'PDF', url: pdfUrl),
+                  const SizedBox(height: 2),
                   Text('Fetched at: ${paper['fetched_at'] ?? 'N/A'}', style: theme.textTheme.bodySmall),
                 ],
               ),
@@ -578,7 +402,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildAIToolTile(ThemeData theme, Map<String, dynamic> tool) {
     return InkWell(
-      onTap: () => _showAiOutputChooser(tool),
+      onTap: () => _openAgentScreen(tool),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -593,19 +417,30 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withOpacity(0.15),
+                color: theme.colorScheme.secondaryContainer.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(tool['icon'] as IconData, color: theme.colorScheme.secondary, size: 22),
             ),
             const Spacer(),
-            Text(tool['title'] as String, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
             Text(
-              'Use selected papers and prompt to generate output.',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.colorScheme.outline, height: 1.3),
+              tool['title'] as String,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  'Open',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_forward, size: 12, color: theme.colorScheme.secondary),
+              ],
             ),
           ],
         ),
@@ -613,78 +448,31 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  Widget _buildAiOutputCard(ThemeData theme) {
-    final result = _aiResultMap;
-    final hasOutput = result != null && result.isNotEmpty;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  /// Renders a labelled clickable link row. Shows "N/A" text if url is empty.
+  Widget _buildLinkRow(ThemeData theme, {required String label, required String url}) {
+    final isEmpty = url.isEmpty || url == 'null';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.18),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.auto_awesome, color: theme.colorScheme.secondary, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    hasOutput ? '$_selectedAiTool · $_selectedAiChoice' : 'AI Output',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!hasOutput)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Run an AI tool above to see results here.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
-              ),
-            )
+          Text('$label: ', style: theme.textTheme.bodySmall),
+          if (isEmpty)
+            Text('N/A', style: theme.textTheme.bodySmall)
           else
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_selectedAiPrompt.isNotEmpty && _selectedAiPrompt != 'No prompt provided.')
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.person_outline, size: 14, color: theme.colorScheme.outline),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _selectedAiPrompt,
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ..._buildJsonSections(theme, result),
-                ],
+            GestureDetector(
+              onTap: () async {
+                final uri = Uri.tryParse(url);
+                if (uri != null && await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: theme.colorScheme.primary,
+                ),
               ),
             ),
         ],
@@ -812,16 +600,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         child: const Icon(Icons.save),
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _loadRepository,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadRepository,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -888,18 +674,39 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
+                      // ── Research Papers (scrollable fixed-height box) ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('Research Papers', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        child: Row(
+                          children: [
+                            Text('Research Papers', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${_projectPapers.where((p) => (p['citations'] as num? ?? 0) > 0).length} with citations)',
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: _projectPapers.isEmpty
                             ? const Text('No papers were fetched yet.')
-                            : Column(children: _projectPapers.map((paper) => _buildPaperCard(theme, paper)).toList()),
+                            : ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 380),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: _projectPapers
+                                        .where((p) => (p['citations'] as num? ?? 0) > 0)
+                                        .map((paper) => _buildPaperCard(theme, paper))
+                                        .toList(),
+                                  ),
+                                ),
+                              ),
                       ),
                       const SizedBox(height: 24),
+                      // ── AI Collaboration Tools (always visible) ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text('AI Collaboration Tools', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -913,56 +720,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 1.05,
+                          childAspectRatio: 0.9,
                           children: _aiTools.map((tool) => _buildAIToolTile(theme, tool)).toList(),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildAiOutputCard(theme),
                       ),
                       const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
-            // AI agent loading overlay
-            if (_isAgentLoading)
-              Container(
-                color: Colors.black.withOpacity(0.45),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          _agentLoadingLabel,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'This may take a moment…',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

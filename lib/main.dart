@@ -22,6 +22,10 @@ import 'screens/summarizer_review_screen.dart';
 import 'screens/comparison_gap_screen.dart';
 import 'screens/literature_review_screen.dart';
 import 'screens/complete_profile_screen.dart';
+import 'screens/summary_screen.dart';
+import 'screens/comparison_screen.dart';
+import 'screens/research_gap_screen.dart';
+import 'screens/agent_literature_review_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +68,10 @@ class ScholarFlowApp extends StatelessWidget {
             '/comparison-gap': (context) => const ComparisonGapScreen(),
             '/literature-review': (context) => const LiteratureReviewScreen(),
             '/complete-profile': (context) => const CompleteProfileScreen(),
+            '/agent/summary': (context) => const SummaryScreen(),
+            '/agent/comparison': (context) => const ComparisonScreen(),
+            '/agent/research-gap': (context) => const ResearchGapScreen(),
+            '/agent/literature-review': (context) =>  AgentLiteratureReviewScreen(),
           },
         );
       },

@@ -56,7 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'projectId': project['id'],
         'projectTitle': project['title'] ?? 'Project',
       },
-    );
+    ).then((_) => _refreshProjects());
   }
 
   bool get _needsProfileCompletion {

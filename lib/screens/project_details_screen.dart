@@ -462,8 +462,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             GestureDetector(
               onTap: () async {
                 final uri = Uri.tryParse(url);
-                if (uri != null && await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                if (uri != null) {
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not open link.')),
+                      );
+                    }
+                  }
                 }
               },
               child: Text(

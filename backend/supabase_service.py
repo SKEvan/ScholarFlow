@@ -161,7 +161,7 @@ class SupabaseService:
         paper_rows = self._request(
             "GET",
             "project_papers",
-            params={"project_id": f"in.({id_list})", "select": "project_id"},
+            params={"project_id": f"in.({id_list})", "citations": "gt.0", "select": "project_id"},
         )
         paper_counts: Dict[str, int] = {}
         for row in (paper_rows if isinstance(paper_rows, list) else []):

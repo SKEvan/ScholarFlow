@@ -249,7 +249,11 @@ class _SignInScreenState extends State<SignInScreen> {
                       // Sign In Button
                       ElevatedButton(
                         onPressed: _isSubmitting ? null : _submitForm,
-                        
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                         child: _isSubmitting
                             ? const SizedBox(
                                 height: 20,
@@ -286,7 +290,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
-                        'Or Sign In With',
+                        'Or Login with',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.outline,
                           fontSize: 11,

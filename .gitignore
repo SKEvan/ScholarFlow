@@ -114,6 +114,7 @@ coverage/
 
 # Symbols
 app.*.symbols
+.vscode
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3

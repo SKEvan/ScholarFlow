@@ -86,7 +86,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const activeTabColor = Color(0xFF3F4347);
+    const activeTabColor = Color(0xFF0F3A31);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F3A31),
@@ -215,6 +215,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     },
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(48),
+                                      textStyle: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -230,6 +235,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       minimumSize: const Size.fromHeight(48),
                                       disabledBackgroundColor: activeTabColor,
                                       disabledForegroundColor: Colors.white,
+                                      textStyle: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -378,6 +388,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     onPressed: _isSubmitting
                                         ? null
                                         : _submitForm,
+                                    style: ElevatedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: const Color(0xFF0F3A31),
+                                    ),
                                     child: _isSubmitting
                                         ? const SizedBox(
                                             height: 20,
@@ -422,119 +438,104 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            Column(
+                            Row(
                               children: [
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Google sign-up is not configured yet.',
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 55,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Google sign-up is not configured yet.',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: Image.asset(
+                                        'assets/google.png',
+                                        height: 30,
+                                        width: 30,
+                                        errorBuilder: (c, e, s) =>
+                                            const Icon(Icons.g_mobiledata),
+                                      ),
+                                      label: Text(
+                                        'Google',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        foregroundColor:
+                                            theme.colorScheme.onSurface,
+                                        side: BorderSide(
+                                          color:
+                                              theme.colorScheme.outlineVariant,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  icon: Image.asset(
-                                    'assets/google.png',
-                                    height: 20,
-                                    width: 20,
-                                    errorBuilder: (c, e, s) =>
-                                        const Icon(Icons.g_mobiledata),
-                                  ),
-                                  label: Text(
-                                    'Sign up with Google',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                        theme.colorScheme.onSurface,
-                                    side: BorderSide(
-                                      color: theme.colorScheme.outlineVariant,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      48,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'LinkedIn sign-up is not configured yet.',
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 55,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'LinkedIn sign-up is not configured yet.',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: Image.asset(
+                                        'assets/linkedin.png',
+                                        height: 30,
+                                        width: 30,
+                                        errorBuilder: (c, e, s) =>
+                                            const Icon(Icons.link),
+                                      ),
+                                      label: Text(
+                                        'LinkedIn',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        foregroundColor:
+                                            theme.colorScheme.onSurface,
+                                        side: BorderSide(
+                                          color:
+                                              theme.colorScheme.outlineVariant,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  icon: Image.asset(
-                                    'assets/linkedin.png',
-                                    height: 20,
-                                    width: 20,
-                                    errorBuilder: (c, e, s) =>
-                                        const Icon(Icons.link),
-                                  ),
-                                  label: Text(
-                                    'Sign up with LinkedIn',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                        theme.colorScheme.onSurface,
-                                    side: BorderSide(
-                                      color: theme.colorScheme.outlineVariant,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      48,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(
-                                    Icons.help_outline,
-                                    size: 18,
-                                  ),
-                                  label: const Text(
-                                    'Help',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: theme.colorScheme.outline
-                                        .withOpacity(0.7),
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(
-                                    Icons.description_outlined,
-                                    size: 18,
-                                  ),
-                                  label: const Text(
-                                    'Terms',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: theme.colorScheme.outline
-                                        .withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
                         ),
                       ),

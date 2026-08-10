@@ -90,7 +90,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const activeTabColor = Color(0xFF3F4347);
+    const activeTabColor = Color(0xFF0F3A31);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F3A31),
@@ -217,6 +217,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                       minimumSize: const Size.fromHeight(48),
                                       disabledBackgroundColor: activeTabColor,
                                       disabledForegroundColor: Colors.white,
+                                      textStyle: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -234,6 +239,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                     },
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(48),
+                                      textStyle: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -410,8 +420,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                       onPressed: _signInWithGoogle,
                                       icon: Image.asset(
                                         'assets/google.png',
-                                        height: 35,
-                                        width: 35,
+                                        height: 30,
+                                        width: 30,
                                         errorBuilder: (c, e, s) =>
                                             const Icon(Icons.g_mobiledata),
                                       ),
@@ -447,8 +457,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                       onPressed: _signInWithLinkedIn,
                                       icon: Image.asset(
                                         'assets/linkedin.png',
-                                        height: 35,
-                                        width: 35,
+                                        height: 30,
+                                        width: 30,
                                         errorBuilder: (c, e, s) =>
                                             const Icon(Icons.link),
                                       ),

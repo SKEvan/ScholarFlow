@@ -28,14 +28,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     await _projectsFuture;
   }
 
-  void _openProject(Map<String, dynamic> project) {
-    Navigator.of(context).pushNamed(
+  Future<void> _openProject(Map<String, dynamic> project) async {
+    await Navigator.of(context).pushNamed(
       '/project-details',
       arguments: {
         'projectId': project['id'],
         'projectTitle': project['title'] ?? 'Project',
       },
     );
+    if (!mounted) {
+      return;
+    }
+    await _refreshProjects();
   }
 
   @override

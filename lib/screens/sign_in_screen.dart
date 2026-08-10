@@ -55,16 +55,18 @@ class _SignInScreenState extends State<SignInScreen> {
         '/dashboard',
         arguments: {
           'profile': result['profile'] ?? const {},
-          'missingFields': _missingProfileFields((result['profile'] as Map?)?.cast<String, dynamic>()),
+          'missingFields': _missingProfileFields(
+            (result['profile'] as Map?)?.cast<String, dynamic>(),
+          ),
         },
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign in failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign in failed: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -103,7 +105,11 @@ class _SignInScreenState extends State<SignInScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withOpacity(
+                              0.5,
+                            ),
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.02),
@@ -129,7 +135,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Welcome Texts
                 Text(
                   'Welcome Back',
@@ -184,19 +190,6 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      FilledButton.icon(
-                        onPressed: _isSigningInWithGoogle ? null : _signInWithGoogle,
-                        icon: const Icon(Icons.g_mobiledata),
-                        label: _isSigningInWithGoogle
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Continue with Google'),
-                      ),
-                      const SizedBox(height: 16),
-
                       // Password field
                       Text(
                         'PASSWORD',
@@ -221,7 +214,9 @@ class _SignInScreenState extends State<SignInScreen> {
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
                             ),
                             onPressed: () {
                               setState(() {
@@ -232,7 +227,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Forgot Password Link
                       Align(
                         alignment: Alignment.centerRight,
@@ -254,16 +249,19 @@ class _SignInScreenState extends State<SignInScreen> {
                       // Sign In Button
                       ElevatedButton(
                         onPressed: _isSubmitting ? null : _submitForm,
+                        
                         child: _isSubmitting
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('Sign In'),
+                                  Text('Login'),
                                   SizedBox(width: 8),
                                   Icon(Icons.arrow_forward, size: 18),
                                 ],
@@ -272,17 +270,23 @@ class _SignInScreenState extends State<SignInScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Divider
                 Row(
                   children: [
-                    Expanded(child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+                    Expanded(
+                      child: Divider(
+                        color: theme.colorScheme.outlineVariant.withOpacity(
+                          0.5,
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
-                        'OR SIGN IN WITH',
+                        'Or Sign In With',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.outline,
                           fontSize: 11,
@@ -290,7 +294,13 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+                    Expanded(
+                      child: Divider(
+                        color: theme.colorScheme.outlineVariant.withOpacity(
+                          0.5,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -299,70 +309,100 @@ class _SignInScreenState extends State<SignInScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Google sign-in is not configured yet.')),
-                          );
-                        },
-                        icon: Image.network(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuCPrz5JGj39MXh5qItGlUhCvHavI1qW21OZZ-wu9VNkgIznykj3X4nQWpXfs-xfw4HE8EfbetArRYuvulVQ7gZI2IFDvf_-gOUDkAPRO2ump0ezrehM8TQaFaHfK2Xg1RVhfl0hH6fi7WIZMCMVjBmgGfTBcUnZC5YduWmfViwzeaMC728QwiDZ_Cd-esiwpoh_2LaHJxMMzslUk_tkgM1nSqclJNNDSgf7rCoODrFam5JWIZc6DnjmnYsFZP3-yScdS5_j6Pb6lHs',
-                          height: 20,
-                          width: 20,
-                          errorBuilder: (c, e, s) => const Icon(Icons.g_mobiledata),
-                        ),
-                        label: Text(
-                          'Google',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      child: SizedBox(
+                        height: 55,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Google sign-in is not configured yet.',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Image.asset(
+                            'assets/google.png',
+                            height: 35,
+                            width: 35,
+                            errorBuilder: (c, e, s) =>
+                                const Icon(Icons.g_mobiledata),
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.onSurface,
-                          side: BorderSide(color: theme.colorScheme.outlineVariant),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          label: Text(
+                            'Google',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets
+                                .zero, // prevents extra padding from fighting the fixed height
+                            foregroundColor: theme.colorScheme.onSurface,
+                            side: BorderSide(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('LinkedIn sign-in is not configured yet.')),
-                          );
-                        },
-                        icon: Image.network(
-                          'https://lh3.googleusercontent.com/aida-public/AB6AXuCaTQzSL1X0tjmxiCLtDDsE-d_POAv6JOsvjzNT4UOsUuZJ4czz88XhEmdcEihQuf0MlHQtHpQMjASewRE3e-ipyYPO5qkgbB8s7whjuckA1GXKKkIGA04D7v62rIGdCZ-tGHRT58ABgDB_T2MFvbv_sHF4pvITnGWOO8B9Pg-upJu87I7mh7kW1Ay9NBLYIAQhlZ4dBzIGRGFS7nLXvnDijn657PfW0Gw029aAHRbNXls7FGlCCuEEiS-pbC8mCFEozjEN8YvxMsA',
-                          height: 20,
-                          width: 20,
-                          errorBuilder: (c, e, s) => const Icon(Icons.link),
-                        ),
-                        label: Text(
-                          'LinkedIn',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      child: SizedBox(
+                        height: 55,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Google sign-in is not configured yet.',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Image.asset(
+                            'assets/linkedin.png',
+                            height: 35,
+                            width: 35,
+                            errorBuilder: (c, e, s) =>
+                                const Icon(Icons.g_mobiledata),
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.onSurface,
-                          side: BorderSide(color: theme.colorScheme.outlineVariant),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          label: Text(
+                            'LinkedIn',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets
+                                .zero, // prevents extra padding from fighting the fixed height
+                            foregroundColor: theme.colorScheme.onSurface,
+                            side: BorderSide(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // Switch to Sign Up
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -378,32 +418,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 36),
-                
-                // Bottom Terms & Help
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.help_outline, size: 20),
-                      label: const Text('Help'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.outline.withOpacity(0.7),
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.description_outlined, size: 20),
-                      label: const Text('Terms'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.outline.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           ),

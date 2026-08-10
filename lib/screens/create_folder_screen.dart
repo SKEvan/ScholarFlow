@@ -122,10 +122,10 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
     });
 
     try {
-      // The backend now creates the project + schedules the search asynchronously,
-      // so this call returns as soon as the row is inserted. We can navigate to
-      // the project details screen immediately and let the project details view
-      // poll for papers as they arrive.
+      setState(() {
+        _creatingStageText = 'Fetching Papers...';
+      });
+
       final result = await BackendApi.createProjectAndResearch(
         title,
         ownerId: UserSession.userId,

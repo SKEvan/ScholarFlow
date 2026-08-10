@@ -239,23 +239,6 @@ class BackendApi {
     throw Exception('Unexpected backend response shape.');
   }
 
-  static Future<Map<String, dynamic>> getProjectSearchStatus(String projectId) async {
-    final response = await _send(
-      () => http.get(Uri.parse('$baseUrl/projects/$projectId/search-status')),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
-    }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
-    }
-
-    throw Exception('Unexpected backend response shape.');
-  }
-
   static Future<Map<String, dynamic>> runProjectAgent({
     required String projectId,                   // UUID → String (was int)
     required String endpoint,

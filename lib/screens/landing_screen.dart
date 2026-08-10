@@ -523,11 +523,7 @@ class _LandingScreenState extends State<LandingScreen> {
     return Container(
       margin: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, theme.colorScheme.secondary.withOpacity(0.06)],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24.0),
         border: Border.all(color: AppTheme.borderSubtle, width: 1.0),
         boxShadow: [
@@ -566,6 +562,12 @@ class _LandingScreenState extends State<LandingScreen> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _navigateToSignIn,
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: const Color(0xFF0F3A31),
+            ),
             child: const Text('Get Started'),
           ),
           const Spacer(),

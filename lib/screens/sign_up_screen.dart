@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:scholar_flow/services/backend_api.dart';
 
+import 'sign_in_screen.dart';
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -83,6 +85,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  void _goToSignIn() {
+    Navigator.of(context).pushReplacement(_authRoute(const SignInScreen()));
+  }
+
+  PageRouteBuilder<void> _authRoute(Widget page) {
+    return PageRouteBuilder<void>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 280),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(-0.03, 0),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -125,44 +157,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 child: Column(
                   children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.35),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.12),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.all(12),
-                            child: Image.asset(
-                              'assets/logo.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'ScholarFlow',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     Text(
                       'Create Account',
                       textAlign: TextAlign.center,
@@ -185,7 +180,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(15),
                         border: Border.all(
                           color: theme.colorScheme.outlineVariant.withOpacity(
                             0.45,
@@ -204,50 +199,71 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      Navigator.of(
-                                        context,
-                                      ).pushReplacementNamed('/signin');
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(48),
-                                      textStyle: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
+                            Container(
+                              height: 48,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE7ECE9),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: double.infinity,
+                                      child: TextButton(
+                                        onPressed: _goToSignIn,
+                                        style: TextButton.styleFrom(
+                                          foregroundColor:
+                                              theme.colorScheme.onSurface,
+                                          backgroundColor: Colors.transparent,
+                                          side: BorderSide.none,
+                                          padding: EdgeInsets.zero,
+                                          textStyle: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text('Login'),
                                       ),
                                     ),
-                                    child: const Text('Login'),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: null,
-                                    style: FilledButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(48),
-                                      disabledBackgroundColor: activeTabColor,
-                                      disabledForegroundColor: Colors.white,
-                                      textStyle: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: double.infinity,
+                                      child: FilledButton(
+                                        onPressed: null,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: activeTabColor,
+                                          disabledBackgroundColor:
+                                              activeTabColor,
+                                          disabledForegroundColor: Colors.white,
+                                          shadowColor: Colors.transparent,
+                                          elevation: 0,
+                                          textStyle: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text('Sign Up'),
                                       ),
                                     ),
-                                    child: const Text('Sign Up'),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 24),
                             Form(

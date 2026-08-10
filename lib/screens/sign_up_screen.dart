@@ -468,7 +468,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     horizontal: 16.0,
                                   ),
                                   child: Text(
-                                    'OR CONTINUE WITH',
+                                    'Or Sign Up With',
                                     style: theme.textTheme.labelLarge?.copyWith(
                                       color: theme.colorScheme.outline,
                                       fontSize: 11,

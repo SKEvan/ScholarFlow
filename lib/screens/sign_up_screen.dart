@@ -180,7 +180,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: theme.colorScheme.outlineVariant.withOpacity(
                             0.45,

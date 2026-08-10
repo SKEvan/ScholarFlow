@@ -53,9 +53,9 @@ class _SplashScreenState extends State<SplashScreen>
     _timer = Timer(const Duration(seconds: 4), () {
       if (mounted) {
         final isLoggedIn = UserSession.userId != null;
-        Navigator.of(context).pushReplacementNamed(
-          isLoggedIn ? '/dashboard' : '/landing',
-        );
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(isLoggedIn ? '/dashboard' : '/landing');
       }
     });
   }
@@ -72,18 +72,30 @@ class _SplashScreenState extends State<SplashScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F3A31),
       body: Stack(
         children: [
-          // Background subtle glow decoration
           Positioned(
-            bottom: -50,
-            right: -50,
+            top: -70,
+            right: -40,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 190,
+              height: 190,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.03),
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -90,
+            left: -40,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
               ),
             ),
           ),
@@ -102,14 +114,14 @@ class _SplashScreenState extends State<SplashScreen>
                         height: 96,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(15),
                           border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                            color: Colors.white.withOpacity(0.35),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.05),
-                              blurRadius: 12,
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -133,6 +145,7 @@ class _SplashScreenState extends State<SplashScreen>
                               fontWeight: FontWeight.bold,
                               fontSize: 28,
                               letterSpacing: -0.5,
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -140,7 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
                             'ELEVATING RESEARCH WITH INTELLIGENCE',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: Colors.white.withOpacity(0.84),
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.5,
                             ),
@@ -158,8 +171,8 @@ class _SplashScreenState extends State<SplashScreen>
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(999),
                           child: LinearProgressIndicator(
-                            backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                            color: theme.colorScheme.secondary,
+                            backgroundColor: Colors.white.withOpacity(0.16),
+                            color: Colors.white,
                           ),
                         ),
                       ),

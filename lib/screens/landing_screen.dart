@@ -28,119 +28,149 @@ class _LandingScreenState extends State<LandingScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F3A31),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Top Navigation Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/logo.png',
-                        height: 32,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'ScholarFlow',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_currentPage < 3)
-                    TextButton(
-                      onPressed: _navigateToSignIn,
-                      child: Text(
-                        'SKIP',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 48, width: 60), // Maintain header height alignment
-                ],
+            Positioned(
+              top: -70,
+              right: -40,
+              child: Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.06),
+                ),
               ),
             ),
-            
-            // Walkthrough Pages Swiper
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (int page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-                },
-                children: [
-                  _buildDiscoveryCard(theme),
-                  _buildReviewCard(theme),
-                  _buildCollaborationCard(theme),
-                  _buildGetStartedCard(theme),
-                ],
+            Positioned(
+              bottom: -90,
+              left: -40,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.05),
+                ),
               ),
             ),
-
-            // Navigation Dots & Action Footer
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 24.0),
-              child: Column(
-                children: [
-                  // Progress dot indicators
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(4, (index) => _buildDot(index, theme)),
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
                   ),
-                  const SizedBox(height: 24),
-                  
-                  // Swiper navigation buttons
-                  Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (_currentPage > 0)
-                        IconButton(
-                          onPressed: () {
-                            _pageController.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                          icon: const Icon(Icons.chevron_left, size: 28),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                      Row(
+                        children: [
+                          Image.asset('assets/logo.png', height: 32),
+                          const SizedBox(width: 8),
+                          Text(
+                            'ScholarFlow',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        )
-                      else
-                        const SizedBox(width: 48),
-                        
+                        ],
+                      ),
                       if (_currentPage < 3)
-                        IconButton(
-                          onPressed: () {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                          icon: const Icon(Icons.chevron_right, size: 28),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                        TextButton(
+                          onPressed: _navigateToSignIn,
+                          child: Text(
+                            'SKIP',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white.withOpacity(0.84),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         )
                       else
-                        const SizedBox(width: 48),
+                        const SizedBox(height: 48, width: 60),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (int page) {
+                      setState(() {
+                        _currentPage = page;
+                      });
+                    },
+                    children: [
+                      _buildDiscoveryCard(theme),
+                      _buildReviewCard(theme),
+                      _buildCollaborationCard(theme),
+                      _buildGetStartedCard(theme),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24.0,
+                    horizontal: 24.0,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          4,
+                          (index) => _buildDot(index, theme),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (_currentPage > 0)
+                            IconButton(
+                              onPressed: () {
+                                _pageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                              icon: const Icon(Icons.chevron_left, size: 28),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: Colors.white.withOpacity(0.18),
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox(width: 48),
+                          if (_currentPage < 3)
+                            IconButton(
+                              onPressed: () {
+                                _pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                              icon: const Icon(Icons.chevron_right, size: 28),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: Colors.white.withOpacity(0.18),
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox(width: 48),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -156,7 +186,7 @@ class _LandingScreenState extends State<LandingScreen> {
       height: 8.0,
       width: isActive ? 32.0 : 8.0,
       decoration: BoxDecoration(
-        color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outlineVariant,
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.35),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -192,7 +222,10 @@ class _LandingScreenState extends State<LandingScreen> {
           Align(
             alignment: Alignment.topLeft,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 6.0,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.secondary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(99),
@@ -250,14 +283,11 @@ class _LandingScreenState extends State<LandingScreen> {
           color: theme.colorScheme.secondary.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          Icons.search,
-          size: 64,
-          color: theme.colorScheme.secondary,
-        ),
+        child: Icon(Icons.search, size: 64, color: theme.colorScheme.secondary),
       ),
       title: 'Intelligent Paper Discovery',
-      description: 'Navigate millions of academic papers with AI-driven semantic search that understands context, not just keywords.',
+      description:
+          'Navigate millions of academic papers with AI-driven semantic search that understands context, not just keywords.',
       extraElements: [
         Wrap(
           spacing: 8.0,
@@ -267,7 +297,7 @@ class _LandingScreenState extends State<LandingScreen> {
             _buildTag(theme, 'Neural Mapping'),
             _buildTag(theme, 'Cross-Domain Synthesis'),
           ],
-        )
+        ),
       ],
     );
   }
@@ -278,7 +308,9 @@ class _LandingScreenState extends State<LandingScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.15)),
+        border: Border.all(
+          color: theme.colorScheme.secondary.withOpacity(0.15),
+        ),
       ),
       child: Text(
         text,
@@ -303,7 +335,9 @@ class _LandingScreenState extends State<LandingScreen> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
             ),
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -358,11 +392,12 @@ class _LandingScreenState extends State<LandingScreen> {
                 color: Colors.white,
               ),
             ),
-          )
+          ),
         ],
       ),
       title: 'Automated Literature Reviews',
-      description: 'Generate comprehensive summaries and automated synthesis of complex literature in minutes, not weeks.',
+      description:
+          'Generate comprehensive summaries and automated synthesis of complex literature in minutes, not weeks.',
       extraElements: [
         Center(
           child: SizedBox(
@@ -372,8 +407,12 @@ class _LandingScreenState extends State<LandingScreen> {
               borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
                 value: 0.65,
-                backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                backgroundColor: theme.colorScheme.outlineVariant.withOpacity(
+                  0.3,
+                ),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.secondary,
+                ),
               ),
             ),
           ),
@@ -406,17 +445,23 @@ class _LandingScreenState extends State<LandingScreen> {
             // Researcher Avatars
             Positioned(
               top: 0,
-              child: _buildAvatarCircle('https://lh3.googleusercontent.com/aida-public/AB6AXuBonnxI30_jnHUY--Eu4Fa-DpG2Jpgb0vQMYEEdDhfs_uarpgTvomsIcQSWcwz9SouPY-j4TOWBOXkCNAjMk_dPTyN0SY5CMJXDJ94SIpvAtJLBhDK4WfRVfP6efNN9d4HBxsrABEW0_kpcGcMMESsQvvYXIY8qpVWf4Bd_zDJFpdkVeWmu1Otl6QUCunpXCz8IKNOeHXGwL6OV7CY_aDyeLJyEHxJ33IwmAbwceazLkF5NLaajd_uEgUpvl--I2U6fdZToUqq5fpg'),
+              child: _buildAvatarCircle(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuBonnxI30_jnHUY--Eu4Fa-DpG2Jpgb0vQMYEEdDhfs_uarpgTvomsIcQSWcwz9SouPY-j4TOWBOXkCNAjMk_dPTyN0SY5CMJXDJ94SIpvAtJLBhDK4WfRVfP6efNN9d4HBxsrABEW0_kpcGcMMESsQvvYXIY8qpVWf4Bd_zDJFpdkVeWmu1Otl6QUCunpXCz8IKNOeHXGwL6OV7CY_aDyeLJyEHxJ33IwmAbwceazLkF5NLaajd_uEgUpvl--I2U6fdZToUqq5fpg',
+              ),
             ),
             Positioned(
               bottom: 0,
               left: 10,
-              child: _buildAvatarCircle('https://lh3.googleusercontent.com/aida-public/AB6AXuC6jmGC_50SXypNLWlPENOo1l797etZqOXthirL8qmMfltl1ZTsbW6qJlk_QsEwHsWDSnIJW3FACfIJOowlIpOc0RziOUWfOzx2WGTpRprGi_zF_YAk66kTKy0d3OI1Hsybsh3woH98scZUPBuvgX-hZFKj1WO2ctV23_SBHYKIxf41kfzRgkEMfJw9q0BumSx9bU6rDG97C-O7mX459AU-519S_EEbRIq7cLLeKVuylu226xy_m5hVm_3dGKkivWDXlD2brjLgSWk'),
+              child: _buildAvatarCircle(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuC6jmGC_50SXypNLWlPENOo1l797etZqOXthirL8qmMfltl1ZTsbW6qJlk_QsEwHsWDSnIJW3FACfIJOowlIpOc0RziOUWfOzx2WGTpRprGi_zF_YAk66kTKy0d3OI1Hsybsh3woH98scZUPBuvgX-hZFKj1WO2ctV23_SBHYKIxf41kfzRgkEMfJw9q0BumSx9bU6rDG97C-O7mX459AU-519S_EEbRIq7cLLeKVuylu226xy_m5hVm_3dGKkivWDXlD2brjLgSWk',
+              ),
             ),
             Positioned(
               bottom: 0,
               right: 10,
-              child: _buildAvatarCircle('https://lh3.googleusercontent.com/aida-public/AB6AXuCKoKSywPTA_XNhFZQywqeU8yNcj4_PCmuhzgkxAEI_41siL5qxvDsqjhgMZUcGf8_ps3utyGMZy3Fh84phe3CbHvX0jmKQkogUxRxOA4S4iBz5Eq-TJWmOuXAIevwuDTwA9wDPKmQ14csLQrp0EQeerkMO8asAnqUd2BgXq55R1sWOW0ReaAtaIkOw_8FfOIniEZSBObpvFvVtCHGbdHuXbYDUK8_v78yL793eJj3SQqcSF9gwlh4b07Ml_ANAA2_SP6fyrxqJPDg'),
+              child: _buildAvatarCircle(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuCKoKSywPTA_XNhFZQywqeU8yNcj4_PCmuhzgkxAEI_41siL5qxvDsqjhgMZUcGf8_ps3utyGMZy3Fh84phe3CbHvX0jmKQkogUxRxOA4S4iBz5Eq-TJWmOuXAIevwuDTwA9wDPKmQ14csLQrp0EQeerkMO8asAnqUd2BgXq55R1sWOW0ReaAtaIkOw_8FfOIniEZSBObpvFvVtCHGbdHuXbYDUK8_v78yL793eJj3SQqcSF9gwlh4b07Ml_ANAA2_SP6fyrxqJPDg',
+              ),
             ),
             // Center network hub icon
             Container(
@@ -424,20 +469,20 @@ class _LandingScreenState extends State<LandingScreen> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                  )
-                ],
+                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
               ),
-              child: Icon(Icons.hub, color: theme.colorScheme.secondary, size: 24),
+              child: Icon(
+                Icons.hub,
+                color: theme.colorScheme.secondary,
+                size: 24,
+              ),
             ),
           ],
         ),
       ),
       title: 'Researcher Collaboration',
-      description: 'Connect with peers globally, share datasets, and co-author papers in secure, AI-enhanced workspaces.',
+      description:
+          'Connect with peers globally, share datasets, and co-author papers in secure, AI-enhanced workspaces.',
       extraElements: [
         TextButton.icon(
           onPressed: () {},
@@ -460,18 +505,15 @@ class _LandingScreenState extends State<LandingScreen> {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2.0),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: ClipOval(
         child: Image.network(
           url,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.person),
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.person),
         ),
       ),
     );
@@ -484,10 +526,7 @@ class _LandingScreenState extends State<LandingScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            theme.colorScheme.secondary.withOpacity(0.06),
-          ],
+          colors: [Colors.white, theme.colorScheme.secondary.withOpacity(0.06)],
         ),
         borderRadius: BorderRadius.circular(24.0),
         border: Border.all(color: AppTheme.borderSubtle, width: 1.0),
@@ -504,12 +543,7 @@ class _LandingScreenState extends State<LandingScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(),
-          Center(
-            child: Image.asset(
-              'assets/logo.png',
-              height: 64,
-            ),
-          ),
+          Center(child: Image.asset('assets/logo.png', height: 64)),
           const Spacer(),
           Text(
             'Ready to Elevate Your Research?',
@@ -538,7 +572,11 @@ class _LandingScreenState extends State<LandingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock, size: 14, color: theme.colorScheme.outline.withOpacity(0.6)),
+              Icon(
+                Icons.lock,
+                size: 14,
+                color: theme.colorScheme.outline.withOpacity(0.6),
+              ),
               const SizedBox(width: 4),
               Text(
                 'SECURE & ACADEMIC STANDARD',

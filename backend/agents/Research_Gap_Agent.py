@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from google import genai
 from System_Prompts import RESEARCH_GAP_PROMPT
 from workflow_state import load_workflow_state, update_workflow_state
-from agent_utils import extract_json, normalize_abstracts
+from agent_utils import extract_json, iter_gemini_text, normalize_abstracts
 
 load_dotenv()
 
@@ -95,6 +95,38 @@ def run_research_gap_from_payload(
 	user_prompt: str = "",
 ) -> Dict[str, Any]:
 	return _run_research_gap_from_abstracts(abstracts, desired_output_type, persist, user_prompt)
+
+
+def stream_research_gap_from_abstracts(
+	abstracts: List[Dict[str, str]],
+	desired_output_type: str,
+	user_prompt: str = "",
+) -> "tuple[Iterator[str], Any]":
+	"""Mirror of :func:`run_research_gap_from_payload` that streams tokens."""
+	if not abstracts:
+		raise ValueError("No abstracts found. Provide paper abstracts first.")
+
+	output_type = (desired_output_type or "Research Gaps").strip() or "Research Gaps"
+	prompt = _build_prompt(abstracts, output_type, user_prompt)
+
+	buffer: list[str] = []
+
+	def _tokens() -> Iterator[str]:
+		for chunk in iter_gemini_text(client, MODEL_NAME, prompt):
+			buffer.append(chunk)
+			yield chunk
+
+	def _finalize() -> Dict[str, Any]:
+		joined = "".join(buffer)
+		data = extract_json(joined) if joined.strip() else {}
+		if not data:
+			raise RuntimeError("Gemini research gap stream produced no usable JSON.")
+		data["tool"] = data.get("tool") or "research_gap"
+		data["output_type"] = output_type
+		data.setdefault("title", "Research Gap")
+		return data
+
+	return _tokens(), _finalize
 
 
 def run_research_gap_from_state() -> Dict[str, Any]:

@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from google import genai
 from workflow_state import load_workflow_state, update_workflow_state
-from agent_utils import extract_json, normalize_abstracts
+from agent_utils import extract_json, iter_gemini_text, normalize_abstracts
 
 load_dotenv()
 
@@ -105,6 +105,43 @@ def run_summary_from_payload(
 def run_summary_from_papers(papers: List[Dict], persist: bool = True) -> Dict[str, Any]:
     abstracts = normalize_abstracts(papers)
     return run_summary_from_payload(abstracts, persist=persist)
+
+
+def stream_summary_from_abstracts(
+    abstracts: List[Dict[str, str]],
+    desired_output_type: str,
+    user_prompt: str = "",
+) -> "tuple[Iterator[str], Any]":
+    """Stream the summary agent's raw text tokens.
+
+    Returns ``(token_iter, final_callable)`` — iterate the first value for live
+    tokens and invoke the second (no args) once the stream is done to obtain
+    the same parsed JSON dict that :func:`run_summary_from_payload` would.
+    """
+    if not abstracts:
+        raise ValueError("No abstracts found. Provide paper abstracts first.")
+
+    output_type = (desired_output_type or "General Summary").strip() or "General Summary"
+    prompt = _build_prompt(abstracts, output_type, user_prompt)
+
+    buffer: list[str] = []
+
+    def _tokens() -> Iterator[str]:
+        for chunk in iter_gemini_text(client, MODEL_NAME, prompt):
+            buffer.append(chunk)
+            yield chunk
+
+    def _finalize() -> Dict[str, Any]:
+        joined = "".join(buffer)
+        data = extract_json(joined) if joined.strip() else {}
+        if not data:
+            raise RuntimeError("Gemini summary stream produced no usable JSON.")
+        data["tool"] = data.get("tool") or "summary"
+        data["output_type"] = output_type
+        data.setdefault("title", "Summary")
+        return data
+
+    return _tokens(), _finalize
 
 
 def run_summary_from_state() -> Dict[str, Any]:

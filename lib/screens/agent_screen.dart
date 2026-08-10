@@ -42,9 +42,14 @@ class _AgentScreenState extends State<AgentScreen> {
 
   bool _isRunning = false;
   bool _isLoadingLatest = false;
+  bool _isStreaming = false;
   Map<String, dynamic>? _result;
   String _resultChoice = '';
   String _resultPrompt = '';
+
+  // ── streaming state ────────────────────────────────────────────────────────
+  String _streamDelta = '';
+  AgentStreamHandle? _streamHandle;
 
   // Maps agent endpoint to the project column that stores the latest output.
   static const _endpointToOutputKey = {
@@ -116,7 +121,7 @@ class _AgentScreenState extends State<AgentScreen> {
     super.dispose();
   }
 
-  // ── run agent ──────────────────────────────────────────────────────────────
+  // ── run agent (token-by-token streaming) ───────────────────────────────────
   Future<void> _run() async {
     if (_projectId == null) return;
     if (_selectedPaperIds.isEmpty) {
@@ -126,32 +131,91 @@ class _AgentScreenState extends State<AgentScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    setState(() => _isRunning = true);
+    setState(() {
+      _isRunning = true;
+      _isStreaming = true;
+      _streamDelta = '';
+      _result = null;
+    });
 
-    try {
-      final result = await BackendApi.runProjectAgent(
-        projectId: _projectId!,
-        endpoint: widget.toolConfig['endpoint'] as String,
-        desiredOutputType: _selectedChoice,
-        userPrompt: _promptCtrl.text.trim(),
-        selectedPaperIds: _selectedPaperIds.toList(),
-      );
-      if (!mounted) return;
-      setState(() {
-        _isRunning = false;
-        _result = result;
-        _resultChoice = _selectedChoice;
-        _resultPrompt = _promptCtrl.text.trim();
-      });
-      // Silently refresh so the stored output is in sync if user leaves & returns.
-      _loadLatestOutput();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isRunning = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Agent failed: $e')),
-      );
-    }
+    final handle = BackendApi.runProjectAgentStream(
+      projectId: _projectId!,
+      endpoint: widget.toolConfig['endpoint'] as String,
+      desiredOutputType: _selectedChoice,
+      userPrompt: _promptCtrl.text.trim(),
+      selectedPaperIds: _selectedPaperIds.toList(),
+    );
+    _streamHandle = handle;
+
+    handle.events.listen(
+      (event) {
+        if (!mounted) return;
+        switch (event) {
+          case AgentStreamMeta():
+            // Reserved for future metadata (e.g. model id). No-op for now.
+            break;
+          case AgentStreamToken(:final delta):
+            setState(() {
+              _streamDelta = (_streamDelta + delta).replaceAll('\r\n', '\n');
+            });
+          case AgentStreamDone(:final result):
+            setState(() {
+              _isRunning = false;
+              _isStreaming = false;
+              _streamDelta = '';
+              _result = result;
+              _resultChoice = _selectedChoice;
+              _resultPrompt = _promptCtrl.text.trim();
+            });
+            // Silently refresh so the stored output is in sync if user leaves & returns.
+            _loadLatestOutput();
+          case AgentStreamError(:final message):
+            setState(() {
+              _isRunning = false;
+              _isStreaming = false;
+              _streamDelta = '';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Agent failed: $message')),
+            );
+        }
+      },
+      onError: (Object error) {
+        if (!mounted) return;
+        setState(() {
+          _isRunning = false;
+          _isStreaming = false;
+          _streamDelta = '';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Agent failed: $error')),
+        );
+      },
+      onDone: () {
+        if (!mounted) return;
+        // If the stream ended without an explicit "done" event, reset state.
+        if (_isRunning || _isStreaming) {
+          setState(() {
+            _isRunning = false;
+            _isStreaming = false;
+            _streamDelta = '';
+          });
+        }
+      },
+      cancelOnError: false,
+    );
+  }
+
+  Future<void> _stop() async {
+    final handle = _streamHandle;
+    if (handle == null) return;
+    setState(() {
+      _isRunning = false;
+      _isStreaming = false;
+      _streamDelta = '';
+    });
+    await handle.cancel();
+    _streamHandle = null;
   }
 
   // ── build ──────────────────────────────────────────────────────────────────
@@ -199,7 +263,6 @@ class _AgentScreenState extends State<AgentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── hero header ──────────────────────────────────────────────
                 Container(
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 20),
@@ -325,17 +388,40 @@ class _AgentScreenState extends State<AgentScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // ── run button ───────────────────────────────────────────────
-                ElevatedButton.icon(
-                  onPressed: _isRunning ? null : _run,
-                  icon: const Icon(Icons.auto_awesome),
-                  label: Text('Run $toolTitle'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                // ── run / stop button ─────────────────────────────────────────
+                if (_isStreaming && _isRunning)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _stop,
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: Text('Stop $toolTitle'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.errorContainer,
+                            foregroundColor: theme.colorScheme.onErrorContainer,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  ElevatedButton.icon(
+                    onPressed: _isRunning ? null : _run,
+                    icon: const Icon(Icons.auto_awesome),
+                    label: Text('Run $toolTitle'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+
+                // ── live streaming bubble ────────────────────────────────────
+                if (_isStreaming) _buildStreamingBubble(theme, toolTitle),
+                if (_isStreaming) const SizedBox(height: 28),
 
                 // ── latest output ────────────────────────────────────────────
                 _buildOutputCard(theme, toolTitle),
@@ -343,39 +429,55 @@ class _AgentScreenState extends State<AgentScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          // Loading overlay
-          if (_isRunning)
-            Container(
-              color: Colors.black.withOpacity(0.45),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '$toolTitle…',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'This may take a moment…',
-                        style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
-                      ),
-                    ],
+  // ── streaming bubble ────────────────────────────────────────────────────────
+  Widget _buildStreamingBubble(ThemeData theme, String toolTitle) {
+    final delta = _streamDelta;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.secondary.withOpacity(0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: theme.colorScheme.secondary, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$toolTitle · streaming…',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.secondary,
                   ),
                 ),
               ),
-            ),
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SelectableText(
+            delta.isEmpty ? 'Thinking…' : delta,
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+          ),
         ],
       ),
     );

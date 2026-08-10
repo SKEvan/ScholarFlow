@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 import logging
 from pathlib import Path
 import sys
@@ -6,6 +7,7 @@ import sys
 from fastapi import BackgroundTasks
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
@@ -313,6 +315,143 @@ def literature_review(payload: AgentRequest) -> dict:
         persist=True,
         user_prompt=payload.user_prompt,
     )
+
+
+# ── SSE streaming for the four UI-facing agents ─────────────────────────────
+
+_AGENT_STREAM_DEFAULTS = {
+    "/agents/summary":           ("summary",           "latest_summary",           "General Summary"),
+    "/agents/comparison":        ("comparison",        "latest_comparison",        "Overall Comparison"),
+    "/agents/research-gap":      ("research_gap",      "latest_research_gap",      "Research Gaps"),
+    "/agents/literature-review": ("literature_review", "latest_literature_review", "Narrative Review"),
+}
+
+
+def _sse_format(event: str, data: dict) -> str:
+    """Encode one SSE message with a single-line ``data:`` payload."""
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    return f"event: {event}\ndata: {payload}\n\n"
+
+
+async def _agent_stream(payload: AgentRequest, endpoint: str):
+    """Async generator powering the four ``/agents/{name}/stream`` routes.
+
+    Yields ``meta`` immediately, ``token`` events for each text chunk from
+    Gemini, then ``done`` with the parsed JSON. Emits ``error`` on failure.
+    """
+    from fastapi.concurrency import iterate_in_threadpool
+
+    try:
+        _ensure_supabase()
+    except Exception as exc:
+        yield _sse_format("error", {"message": str(exc)})
+        return
+
+    try:
+        abstracts = (
+            _load_project_abstracts(payload.project_id, payload.selected_paper_ids)
+            if payload.project_id is not None
+            else [item.model_dump() for item in payload.abstracts]
+        )
+    except Exception as exc:
+        logger.exception("could not load abstracts for %s", endpoint)
+        yield _sse_format("error", {"message": f"Could not load abstracts: {exc}"})
+        return
+
+    tool_key, latest_column, default_output_type = _AGENT_STREAM_DEFAULTS[endpoint]
+
+    if not abstracts:
+        yield _sse_format("error", {"message": "No abstracts found. Provide paper abstracts first."})
+        return
+
+    output_type = (payload.desired_output_type or "").strip() or default_output_type
+
+    yield _sse_format("meta", {"tool": tool_key, "output_type": output_type})
+
+    # Lazy-import the matching streaming factory.
+    if endpoint == "/agents/summary":
+        from Summary_Agent import stream_summary_from_abstracts as factory
+    elif endpoint == "/agents/comparison":
+        from Comparison_Agent import stream_comparison_from_abstracts as factory
+    elif endpoint == "/agents/research-gap":
+        from Research_Gap_Agent import stream_research_gap_from_abstracts as factory
+    else:
+        from Literature_Review_Agent import stream_literature_review_from_abstracts as factory
+
+    try:
+        tokens, finalize = factory(abstracts, output_type, payload.user_prompt)
+    except Exception as exc:
+        logger.exception("agent factory failed for %s", endpoint)
+        yield _sse_format("error", {"message": str(exc)})
+        return
+
+    try:
+        async for delta in iterate_in_threadpool(tokens):
+            if delta:
+                yield _sse_format("token", {"delta": delta})
+    except GeneratorExit:
+        # Client disconnected — close the upstream generator.
+        try:
+            tokens.close()
+        except Exception:
+            pass
+        return
+    except Exception as exc:
+        logger.exception("stream agent %s failed", endpoint)
+        yield _sse_format("error", {"message": f"Stream interrupted: {exc}"})
+        return
+
+    # Build the final JSON. If parsing fails we still report the error — the
+    # client has seen the raw text already so the bubble is informative.
+    try:
+        final = finalize()
+    except Exception as exc:
+        logger.exception("finalize failed for %s", endpoint)
+        yield _sse_format("error", {"message": f"Could not parse final JSON: {exc}"})
+        return
+
+    # Persist exactly like the non-streaming endpoint does, when tied to a project.
+    if payload.project_id:
+        try:
+            supabase_service.update_project_latest_outputs(
+                payload.project_id,
+                {latest_column: final, "updated_at": datetime.now(timezone.utc).isoformat()},
+            )
+        except Exception:
+            logger.exception("could not persist %s for project %s", latest_column, payload.project_id)
+
+    yield _sse_format("done", {"result": final})
+
+
+def _stream_response(gen):
+    return StreamingResponse(
+        gen,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.post("/agents/summary/stream")
+async def stream_summary(payload: AgentRequest):
+    return _stream_response(_agent_stream(payload, "/agents/summary"))
+
+
+@app.post("/agents/comparison/stream")
+async def stream_comparison(payload: AgentRequest):
+    return _stream_response(_agent_stream(payload, "/agents/comparison"))
+
+
+@app.post("/agents/research-gap/stream")
+async def stream_research_gap(payload: AgentRequest):
+    return _stream_response(_agent_stream(payload, "/agents/research-gap"))
+
+
+@app.post("/agents/literature-review/stream")
+async def stream_literature_review(payload: AgentRequest):
+    return _stream_response(_agent_stream(payload, "/agents/literature-review"))
 
 
 def _run_background_search(project_id: str, owner_id: str | None, queries: list[str]) -> None:

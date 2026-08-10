@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 import sys
 
+from fastapi import BackgroundTasks
 from fastapi import FastAPI
 from fastapi import HTTPException
 from dotenv import load_dotenv
@@ -314,8 +315,63 @@ def literature_review(payload: AgentRequest) -> dict:
     )
 
 
+def _run_background_search(project_id: str, owner_id: str | None, queries: list[str]) -> None:
+    """Background worker: runs the streaming search and incrementally persists results.
+
+    Each per-query batch is pushed to Supabase. The frontend polls
+    `/projects/{id}/search-status` to know when more papers have arrived.
+    """
+    from Search_Agent import run_search_streaming
+
+    def _on_batch(batch_papers: list[dict], total_unique: list[dict]) -> None:
+        # Persist the new batch (citations>0 already filtered by Search_Agent).
+        if batch_papers:
+            try:
+                supabase_service.append_project_papers(project_id, batch_papers)
+            except Exception as exc:
+                logger.exception("append_project_papers failed for project %s", project_id)
+        # Snapshot the running total so the next status poll can deliver quickly.
+        try:
+            supabase_service.update_project_latest_papers(project_id, total_unique)
+            supabase_service.update_search_status(
+                project_id,
+                "in_progress",
+                paper_count=len(total_unique),
+            )
+        except Exception:
+            logger.exception("update_search_status failed for project %s", project_id)
+
+    try:
+        logger.info("[background-search] starting for project %s (%d queries)", project_id, len(queries))
+        result = run_search_streaming(queries, _on_batch)
+        final_papers = result.get("papers") or []
+        errors = result.get("errors") or []
+        terminal = "completed" if not errors else "partial"
+        supabase_service.update_search_status(
+            project_id,
+            terminal,
+            errors=errors,
+            paper_count=len(final_papers),
+        )
+        supabase_service.update_project_latest_papers(project_id, final_papers)
+        logger.info(
+            "[background-search] project %s finished with %d papers, status=%s, errors=%d",
+            project_id, len(final_papers), terminal, len(errors),
+        )
+    except Exception as exc:
+        logger.exception("background search crashed for project %s", project_id)
+        try:
+            supabase_service.update_search_status(
+                project_id,
+                "failed",
+                errors=[f"SearchAgent crashed: {exc}"],
+            )
+        except Exception:
+            logger.exception("failed to mark search_status=failed for project %s", project_id)
+
+
 @app.post("/projects/research")
-def research_project(payload: ProjectResearchRequest) -> dict:
+def research_project(payload: ProjectResearchRequest, background_tasks: BackgroundTasks) -> dict:
     title = payload.title.strip()
     if not title:
         raise HTTPException(status_code=400, detail="Project title is required.")
@@ -323,8 +379,7 @@ def research_project(payload: ProjectResearchRequest) -> dict:
     _ensure_supabase()
 
     from Querry_Planning_Agent import generate_search_plan
-    from Search_Agent import run_search_from_state
-    from workflow_state import update_workflow_state, load_workflow_state
+    from workflow_state import update_workflow_state
 
     project = supabase_service.create_project(
         title=title,
@@ -339,10 +394,21 @@ def research_project(payload: ProjectResearchRequest) -> dict:
         payload.collaborators,
         requested_by=payload.owner_id,
     )
+
+    # Generate the search plan up front so the user knows which queries will run.
+    try:
+        plan = generate_search_plan(title)
+        queries = list(plan.get("queries") or [])
+    except Exception as exc:
+        logger.exception("generate_search_plan failed for project %s", project["id"])
+        queries = []
+        plan = {"queries": []}
+
     update_workflow_state(
         {
             "topic": title,
             "user_query": title,
+            "search_queries": queries,
             "desired_output_type": payload.desired_output_type or "",
             "current_agent": "project_research",
             "status": "project_research_started",
@@ -350,23 +416,49 @@ def research_project(payload: ProjectResearchRequest) -> dict:
         }
     )
 
-    plan = generate_search_plan(title)
-    papers = run_search_from_state()
-    saved_papers = supabase_service.upsert_project_papers(project["id"], papers)
-    supabase_service.update_project_latest_outputs(
+    # Mark the project as pending + record the plan so the UI can show them.
+    supabase_service.update_project(
         project["id"],
         {
-            "latest_papers": papers or [],
+            "search_queries": queries,
+            "search_status": "pending" if queries else "failed",
+            "search_errors": [] if queries else ["Query Planning Agent returned no queries."],
+            "latest_papers": [],
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
-    workflow_state = load_workflow_state()
+
+    # Schedule the streaming search. The HTTP response returns immediately so the
+    # user can navigate to the project details screen while papers trickle in.
+    if queries:
+        background_tasks.add_task(
+            _run_background_search,
+            project["id"],
+            payload.owner_id,
+            queries,
+        )
 
     return {
         "project": project,
-        "search_queries": plan.get("queries", []),
-        "papers": saved_papers or papers,
-        "workflow_state": workflow_state,
+        "search_queries": queries,
+        "search_status": "pending" if queries else "failed",
+        "papers": [],
+    }
+
+
+@app.get("/projects/{project_id}/search-status")
+def project_search_status(project_id: str) -> dict:   # UUID → str
+    _ensure_supabase()
+    row = supabase_service.get_search_status(project_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    return {
+        "project_id": project_id,
+        "search_status": row.get("search_status") or "pending",
+        "search_errors": row.get("search_errors") or [],
+        "paper_count": len(row.get("latest_papers") or []),
+        "search_queries": row.get("search_queries") or [],
+        "latest_papers": row.get("latest_papers") or [],
     }
 
 
@@ -376,7 +468,13 @@ def project_repository(project_id: str) -> dict:   # UUID → str
     project = supabase_service.get_project(project_id)
     papers = supabase_service.list_project_papers(project_id)
     versions = supabase_service.list_versions(project_id)
-    return {"project": project, "papers": papers, "versions": versions}
+    return {
+        "project": project,
+        "papers": papers,
+        "versions": versions,
+        "search_status": project.get("search_status") or "pending",
+        "search_errors": project.get("search_errors") or [],
+    }
 
 
 @app.get("/projects")

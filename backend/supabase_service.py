@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
 import requests
@@ -233,25 +234,36 @@ class SupabaseService:
     # Papers
     # ------------------------------------------------------------------ #
 
-    def upsert_project_papers(self, project_id: str, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        # UUID → str (was int). Uses POST with on_conflict to avoid duplicates.
+    MIN_CITATIONS = 1  # Search agent and final upsert both drop zero-citation papers.
+
+    @staticmethod
+    def _build_paper_rows(project_id: str, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Project papers into the project_papers rows shape and drop 0-citation papers."""
         rows: List[Dict[str, Any]] = []
         for paper in papers:
+            citations = paper.get("citations") or 0
+            if citations < SupabaseService.MIN_CITATIONS:
+                continue
             rows.append(
                 {
                     "project_id": project_id,
                     "title": paper.get("title") or "",
-                    "authors": ", ".join(self._list(paper.get("authors"))),
+                    "authors": ", ".join(SupabaseService._list(paper.get("authors"))),
                     "abstract": paper.get("abstract"),
                     "year": paper.get("year"),
                     "doi": paper.get("doi"),
                     "paper_url": paper.get("paper_url"),
                     "doi_url": paper.get("doi_url"),
                     "pdf_url": paper.get("pdf_url"),
-                    "citations": paper.get("citations") or 0,
+                    "citations": citations,
                     "is_selected": True,
                 }
             )
+        return rows
+
+    def upsert_project_papers(self, project_id: str, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # UUID → str (was int). Uses POST with on_conflict to avoid duplicates.
+        rows = self._build_paper_rows(project_id, papers)
         if not rows:
             return []
         # on_conflict prevents duplicate rows when the same paper is saved twice.
@@ -264,6 +276,26 @@ class SupabaseService:
             prefer="resolution=merge-duplicates,return=representation",
         )
         return result if isinstance(result, list) else [result]
+
+    def append_project_papers(self, project_id: str, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Append a batch of papers (used by the background search stream). Filters citations>0."""
+        rows = self._build_paper_rows(project_id, papers)
+        if not rows:
+            return []
+        result = self._request(
+            "POST",
+            "project_papers",
+            json_body=rows,
+            prefer="resolution=merge-duplicates,return=representation",
+        )
+        return result if isinstance(result, list) else [result]
+
+    def update_project_latest_papers(self, project_id: str, papers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Persist the current running paper list to projects.latest_papers for fast reads."""
+        return self.update_project(
+            project_id,
+            {"latest_papers": papers or [], "updated_at": datetime.now(timezone.utc).isoformat()},
+        )
 
     def list_project_papers(self, project_id: str, selected_only: bool = False) -> List[Dict[str, Any]]:
         # UUID → str
@@ -299,6 +331,46 @@ class SupabaseService:
 
     def update_project_latest_outputs(self, project_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         return self.update_project(project_id, updates)
+
+    # ------------------------------------------------------------------ #
+    # Search status (used by the streaming paper fetcher)
+    # ------------------------------------------------------------------ #
+
+    VALID_SEARCH_STATUSES = ("pending", "in_progress", "completed", "partial", "failed")
+
+    def update_search_status(
+        self,
+        project_id: str,
+        status: str,
+        *,
+        errors: Optional[List[Any]] = None,
+        paper_count: Optional[int] = None,
+        queries: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        if status not in self.VALID_SEARCH_STATUSES:
+            raise ValueError(f"Invalid search_status: {status}")
+        updates: Dict[str, Any] = {
+            "search_status": status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if errors is not None:
+            updates["search_errors"] = errors
+        if paper_count is not None:
+            updates["search_paper_count"] = paper_count
+        if queries is not None:
+            updates["search_queries"] = queries
+        return self.update_project(project_id, updates)
+
+    def get_search_status(self, project_id: str) -> Dict[str, Any]:
+        result = self._request(
+            "GET",
+            "projects",
+            params={
+                "id": f"eq.{project_id}",
+                "select": "id,search_status,search_errors,search_paper_count,search_queries,latest_papers,latest_summary,latest_comparison,latest_research_gap,latest_literature_review",
+            },
+        )
+        return self._single(result)
 
     # ------------------------------------------------------------------ #
     # Versions

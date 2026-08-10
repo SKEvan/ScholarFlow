@@ -200,6 +200,90 @@ def run_search_from_state() -> List[Dict]:
     return unique_papers
 
 
+# ---------------------------------------------------------------------------
+# Streaming variant — used by the FastAPI background search so each batch of
+# papers becomes visible as soon as it lands in Supabase.
+# ---------------------------------------------------------------------------
+
+# Papers with zero citations are dropped before they ever hit the network/DB.
+MIN_CITATIONS = 1
+
+
+def _filter_zero_citation(papers: List[Dict]) -> List[Dict]:
+    return [p for p in papers if (p.get("citations") or 0) >= MIN_CITATIONS]
+
+
+def _merge_unique(existing: List[Dict], new_papers: List[Dict]) -> List[Dict]:
+    """Merge new papers into existing list, dedup by DOI/title, keep citation-sort."""
+    seen_doi = set()
+    seen_title = set()
+    for p in existing:
+        doi = (p.get("doi") or "").lower()
+        if doi:
+            seen_doi.add(doi)
+        title = p.get("title")
+        if title:
+            seen_title.add(_normalize_title(title))
+
+    for paper in new_papers:
+        doi = (paper.get("doi") or "").lower()
+        title = paper.get("title")
+        if doi and doi in seen_doi:
+            continue
+        if title and _normalize_title(title) in seen_title:
+            continue
+        if doi:
+            seen_doi.add(doi)
+        if title:
+            seen_title.add(_normalize_title(title))
+        existing.append(paper)
+
+    return sorted(existing, key=lambda p: p.get("citations", 0) or 0, reverse=True)
+
+
+def run_search_streaming(
+    queries: List[str],
+    on_batch,
+    cancel_check=None,
+) -> Dict:
+    """
+    Run searches for `queries` and invoke `on_batch(batch_papers, total_unique)` after each
+    query succeeds. Papers with zero citations are filtered out before the callback fires.
+
+    `cancel_check` is an optional callable returning True to stop early.
+
+    Returns a dict with the final unique paper list and any errors collected.
+    """
+    if not queries:
+        raise ValueError("No search queries provided.")
+
+    unique_papers: List[Dict] = []
+    errors: List[str] = []
+
+    for idx, query in enumerate(queries):
+        if cancel_check is not None and cancel_check():
+            errors.append(f"SearchAgent: cancelled before query '{query}'")
+            break
+        if idx > 0:
+            time.sleep(QUERY_INTERVAL_SECONDS)
+
+        try:
+            raw_papers = search_with_query_retries(query)
+        except Exception as exc:
+            errors.append(f"SearchAgent: query '{query}' failed: {exc}")
+            continue
+
+        filtered = _filter_zero_citation(raw_papers)
+        unique_papers = _merge_unique(unique_papers, filtered)
+
+        try:
+            on_batch(filtered, list(unique_papers))
+        except Exception as exc:
+            errors.append(f"SearchAgent: on_batch callback failed for query '{query}': {exc}")
+
+    return {"papers": unique_papers, "errors": errors}
+
+
 if __name__ == "__main__":
     try:
         papers = run_search_from_state()

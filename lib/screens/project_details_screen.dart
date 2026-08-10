@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -51,8 +53,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   Set<String> _selectedPaperIds = <String>{};
   final Set<String> _expandedPaperIds = <String>{};
 
+  // Streaming search status (polled from /projects/{id}/search-status).
+  Timer? _searchPollTimer;
+  String _searchStatus = 'pending';
+  int _searchPaperCount = 0;
+  List<String> _searchErrors = const <String>[];
+  bool _searchTerminal = false;
+
   @override
   void dispose() {
+    _searchPollTimer?.cancel();
+    _searchPollTimer = null;
     _versionNameController.dispose();
     _versionNoteController.dispose();
     super.dispose();
@@ -76,6 +87,74 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
     if (_projectId != null && _projectPapers.isEmpty && !_isLoading) {
       _loadRepository();
+    }
+
+    _startSearchPolling();
+  }
+
+  void _startSearchPolling() {
+    if (_projectId == null || _searchPollTimer != null) {
+      return;
+    }
+    _searchPollTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _pollSearchStatus(),
+    );
+  }
+
+  void _stopSearchPolling() {
+    _searchPollTimer?.cancel();
+    _searchPollTimer = null;
+  }
+
+  Future<void> _pollSearchStatus() async {
+    if (_projectId == null) {
+      _stopSearchPolling();
+      return;
+    }
+
+    try {
+      final status = await BackendApi.getProjectSearchStatus(_projectId!);
+      if (!mounted) {
+        return;
+      }
+
+      final rawStatus = status['search_status']?.toString() ?? 'pending';
+      final paperCount = (status['paper_count'] as num?)?.toInt() ?? 0;
+      final errors = (status['search_errors'] as List? ?? const [])
+          .map((e) => e.toString())
+          .toList();
+
+      final remotePapers = (status['latest_papers'] as List? ?? const [])
+          .whereType<Map>()
+          .map((paper) => Map<String, dynamic>.from(paper))
+          .toList();
+
+      final newStatus = <String>{
+        'completed',
+        'partial',
+        'failed',
+      }.contains(rawStatus);
+
+      setState(() {
+        _searchStatus = rawStatus;
+        _searchPaperCount = paperCount;
+        _searchErrors = errors;
+        _searchTerminal = newStatus;
+      });
+
+      // Refresh the repository view whenever new papers have streamed in.
+      if (remotePapers.length > _projectPapers.length) {
+        await _loadRepository();
+      }
+
+      if (newStatus) {
+        _stopSearchPolling();
+        // Final sync so the local papers list matches the terminal snapshot.
+        await _loadRepository();
+      }
+    } catch (_) {
+      // Polling failures are non-fatal — retry on the next tick.
     }
   }
 
@@ -617,6 +696,69 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (_searchStatus == 'pending' ||
+                          _searchStatus == 'in_progress')
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer
+                                  .withOpacity(0.35),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: theme.colorScheme.secondary
+                                    .withOpacity(0.35),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      theme.colorScheme.secondary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _searchStatus == 'pending'
+                                        ? 'Queued: searching for papers…'
+                                        : 'Fetching papers… $_searchPaperCount so far',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.secondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (_searchTerminal && _searchErrors.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.errorContainer
+                                  .withOpacity(0.35),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Some queries failed: ${_searchErrors.take(2).join("; ")}',
+                              style: theme.textTheme.bodySmall,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Container(

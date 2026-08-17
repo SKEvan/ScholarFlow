@@ -28,7 +28,7 @@ class _LandingScreenState extends State<LandingScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F3A31),
+      backgroundColor: const Color(0xFF017ECB),
       body: SafeArea(
         child: Stack(
           children: [
@@ -566,7 +566,7 @@ class _LandingScreenState extends State<LandingScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: const Color(0xFF0F3A31),
+              backgroundColor: const Color(0xFF017ECB),
             ),
             child: const Text('Get Started'),
           ),

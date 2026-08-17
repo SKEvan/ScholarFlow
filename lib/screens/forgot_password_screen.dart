@@ -96,7 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F3A31),
+      backgroundColor: const Color(0xFF017ECB),
       body: SafeArea(
         child: Stack(
           children: [
@@ -208,7 +208,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: const Color(0xFF0F3A31),
+                                  backgroundColor: const Color(0xFF017ECB),
                                 ),
                                 child: _isSending
                                     ? const Row(

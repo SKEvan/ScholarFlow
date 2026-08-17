@@ -72,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F3A31),
+      backgroundColor: const Color(0xFF017ECB),
       body: Stack(
         children: [
           Positioned(

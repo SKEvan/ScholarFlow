@@ -118,10 +118,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const activeTabColor = Color(0xFF0F3A31);
+    const activeTabColor = Color(0xFF017ECB);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F3A31),
+      backgroundColor: const Color(0xFF017ECB),
       body: Stack(
         children: [
           Positioned(
@@ -439,7 +439,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      backgroundColor: const Color(0xFF0F3A31),
+                                      backgroundColor: const Color(0xFF017ECB),
                                     ),
                                     child: _isSubmitting
                                         ? const SizedBox(

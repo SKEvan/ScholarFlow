@@ -16,7 +16,8 @@ class NoteModel {
       title: json['title']?.toString() ?? '',
       content: json['content']?.toString() ?? '',
       category: json['category']?.toString() ?? 'RESEARCH',
-      updatedAt: json['updatedAt']?.toString() ?? DateTime.now().toIso8601String(),
+      updatedAt:
+          json['updatedAt']?.toString() ?? DateTime.now().toIso8601String(),
     );
   }
 
@@ -95,7 +96,9 @@ class NoteStorageService extends ChangeNotifier {
     try {
       final List<dynamic> parsedList = json.decode(initialJsonString);
       _notes.clear();
-      _notes.addAll(parsedList.map((e) => NoteModel.fromJson(e as Map<String, dynamic>)));
+      _notes.addAll(
+        parsedList.map((e) => NoteModel.fromJson(e as Map<String, dynamic>)),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error parsing initial notes JSON: $e');
@@ -114,7 +117,9 @@ class NoteStorageService extends ChangeNotifier {
     try {
       final List<dynamic> parsed = json.decode(jsonString);
       _notes.clear();
-      _notes.addAll(parsed.map((e) => NoteModel.fromJson(e as Map<String, dynamic>)));
+      _notes.addAll(
+        parsed.map((e) => NoteModel.fromJson(e as Map<String, dynamic>)),
+      );
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {

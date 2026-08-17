@@ -159,37 +159,56 @@ class _NotesScreenState extends State<NotesScreen> {
                   child: Column(
                     children: [
                       // Search Input
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
+                      SizedBox(
+                        height: 40,
                         child: TextField(
                           controller: _searchController,
                           onChanged: (val) => setState(() => _searchQuery = val),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF0F172A),
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Search notes title or content...',
                             hintStyle: const TextStyle(
                               color: Color(0xFF94A3B8),
                               fontSize: 13,
                             ),
-                            icon: const Icon(
+                            prefixIcon: const Icon(
                               Icons.search_rounded,
                               color: Color(0xFF64748B),
-                              size: 20,
+                              size: 18,
                             ),
-                            border: InputBorder.none,
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 18),
+                                    icon: const Icon(Icons.clear_rounded, size: 16),
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() => _searchQuery = '');
                                     },
                                   )
                                 : null,
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                              horizontal: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: brandColor,
+                                width: 1.2,
+                              ),
+                            ),
                           ),
                         ),
                       ),

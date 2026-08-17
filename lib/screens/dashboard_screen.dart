@@ -89,11 +89,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     const brandColor = Color(0xFF017ECB);
+    const lightSkyBlue = Color(0xFFEAF4FB);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: lightSkyBlue,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: lightSkyBlue,
         elevation: 0,
         scrolledUnderElevation: 1,
         titleSpacing: 16,
@@ -251,85 +252,134 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshProjects,
-          color: brandColor,
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _projectsFuture,
-            builder: (context, snapshot) {
-              final projects = snapshot.data ?? const <Map<String, dynamic>>[];
-              final totalPapers = projects.fold<int>(
-                0,
-                (sum, item) => sum + ((item['paper_count'] as int?) ?? 0),
-              );
-
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
-                children: [
-                  // Greeting & Header Card
-                  _buildHeaderCard(context, theme, brandColor),
-                  const SizedBox(height: 20),
-
-                  // Missing Profile Warning Banner
-                  if (_needsProfileCompletion) ...[
-                    _buildProfileWarningCard(context, theme),
-                    const SizedBox(height: 20),
+      body: Stack(
+        children: [
+          // Background Modern Design Objects
+          Positioned(
+            top: -50,
+            right: -40,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    brandColor.withValues(alpha: 0.12),
+                    brandColor.withValues(alpha: 0.0),
                   ],
-
-                  // Stats Overview Grid
-                  _buildQuickStats(projects.length, totalPapers),
-                  const SizedBox(height: 24),
-
-                  // Section Title
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Running Projects',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0F172A),
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        '${projects.length} Total',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Projects Content State
-                  if (snapshot.connectionState == ConnectionState.waiting) ...[
-                    const SizedBox(height: 40),
-                    const Center(
-                      child: CircularProgressIndicator(color: brandColor),
-                    ),
-                  ] else if (snapshot.hasError) ...[
-                    _buildErrorCard(snapshot.error.toString(), brandColor),
-                  ] else if (projects.isEmpty) ...[
-                    _buildEmptyState(context, brandColor),
-                  ] else ...[
-                    ...projects.map(
-                      (project) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _ProjectCard(
-                          project: project,
-                          onTap: () => _openProject(project),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            top: 280,
+            left: -60,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.07),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 60,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(60),
+                color: const Color(0xFF0284C7).withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          // Screen Content
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _refreshProjects,
+              color: brandColor,
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _projectsFuture,
+                builder: (context, snapshot) {
+                  final projects =
+                      snapshot.data ?? const <Map<String, dynamic>>[];
+                  final totalPapers = projects.fold<int>(
+                    0,
+                    (sum, item) => sum + ((item['paper_count'] as int?) ?? 0),
+                  );
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                    children: [
+                      // Greeting & Header Card
+                      _buildHeaderCard(context, theme, brandColor),
+                      const SizedBox(height: 20),
+
+                      // Missing Profile Warning Banner
+                      if (_needsProfileCompletion) ...[
+                        _buildProfileWarningCard(context, theme),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Stats Overview Grid
+                      _buildQuickStats(projects.length, totalPapers),
+                      const SizedBox(height: 24),
+
+                      // Section Title
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Running Projects',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                              fontSize: 18,
+                            ),
+                          ),
+                          Text(
+                            '${projects.length} Total',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Projects Content State
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) ...[
+                        const SizedBox(height: 40),
+                        const Center(
+                          child: CircularProgressIndicator(color: brandColor),
+                        ),
+                      ] else if (snapshot.hasError) ...[
+                        _buildErrorCard(snapshot.error.toString(), brandColor),
+                      ] else if (projects.isEmpty) ...[
+                        _buildEmptyState(context, brandColor),
+                      ] else ...[
+                        ...projects.map(
+                          (project) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _ProjectCard(
+                              project: project,
+                              onTap: () => _openProject(project),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {

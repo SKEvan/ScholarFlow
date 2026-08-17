@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'theme.dart';
@@ -26,6 +26,8 @@ import 'screens/summary_screen.dart';
 import 'screens/comparison_screen.dart';
 import 'screens/research_gap_screen.dart';
 import 'screens/agent_literature_review_screen.dart';
+import 'screens/notes_screen.dart';
+import 'screens/note_editor_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +58,8 @@ class ScholarFlowApp extends StatelessWidget {
             '/dashboard': (context) => const DashboardScreen(),
             '/profile': (context) => const ProfileScreen(),
             '/forgot-password': (context) => const ForgotPasswordScreen(),
+            '/notes': (context) => const NotesScreen(),
+            '/note-editor': (context) => const NoteEditorScreen(),
             '/new-note': (context) => const NewNoteScreen(),
             '/add-collaborator': (context) => const AddCollaboratorScreen(),
             '/upload-paper': (context) => const UploadPaperScreen(),

@@ -19,7 +19,7 @@ class FloatingNavBar extends StatelessWidget {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -40,7 +40,7 @@ class FloatingNavBar extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(24),
@@ -49,56 +49,69 @@ class FloatingNavBar extends StatelessWidget {
                   width: 1.3,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _NavItem(
-                    icon: Icons.grid_view_rounded,
-                    label: 'Dashboard',
-                    isSelected: currentRoute == '/dashboard',
-                    onTap: () {
-                      if (currentRoute != '/dashboard') {
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _NavItem(
+                      icon: Icons.grid_view_rounded,
+                      label: 'Dashboard',
+                      isSelected: currentRoute == '/dashboard',
+                      onTap: () {
+                        if (currentRoute != '/dashboard') {
+                          Navigator.of(
+                            context,
+                          ).pushReplacementNamed('/dashboard');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.edit_note_rounded,
+                      label: 'Notes',
+                      isSelected: currentRoute == '/notes',
+                      onTap: () {
+                        if (currentRoute != '/notes') {
+                          Navigator.of(context).pushReplacementNamed('/notes');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.add_circle_rounded,
+                      label: 'New Project',
+                      isSelected: false,
+                      isHighlight: true,
+                      onTap: () {
+                        Navigator.of(context).pushNamed('/create-folder');
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.person_rounded,
+                      label: 'Profile',
+                      isSelected: currentRoute == '/profile',
+                      badge: needsProfileCompletion,
+                      onTap: () {
+                        if (currentRoute != '/profile') {
+                          Navigator.of(context).pushNamed('/profile');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.logout_rounded,
+                      label: 'Logout',
+                      isSelected: false,
+                      activeColor: const Color(0xFFEF4444),
+                      onTap: () async {
+                        await UserSession.clear();
+                        if (!context.mounted) return;
                         Navigator.of(
                           context,
-                        ).pushReplacementNamed('/dashboard');
-                      }
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.add_circle_rounded,
-                    label: 'New Project',
-                    isSelected: false,
-                    isHighlight: true,
-                    onTap: () {
-                      Navigator.of(context).pushNamed('/create-folder');
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.person_rounded,
-                    label: 'Profile',
-                    isSelected: currentRoute == '/profile',
-                    badge: needsProfileCompletion,
-                    onTap: () {
-                      if (currentRoute != '/profile') {
-                        Navigator.of(context).pushNamed('/profile');
-                      }
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.logout_rounded,
-                    label: 'Logout',
-                    isSelected: false,
-                    activeColor: const Color(0xFFEF4444),
-                    onTap: () async {
-                      await UserSession.clear();
-                      if (!context.mounted) return;
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/signin', (route) => false);
-                    },
-                  ),
-                ],
+                        ).pushNamedAndRemoveUntil('/signin', (route) => false);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -138,7 +151,7 @@ class _NavItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withValues(alpha: 0.12)
@@ -151,12 +164,12 @@ class _NavItem extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: isHighlight ? 23 : 21),
+                Icon(icon, color: color, size: isHighlight ? 21 : 19),
                 const SizedBox(height: 2),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 10.0,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     color: color,
                   ),

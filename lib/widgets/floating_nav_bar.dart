@@ -23,7 +23,7 @@ class FloatingNavBar extends StatelessWidget {
         width: 340,
         height:
             barHeight +
-            18, // Extra height for the elevated central floating button
+            14, // Extra height for the elevated central floating button
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
@@ -37,7 +37,7 @@ class FloatingNavBar extends StatelessWidget {
               child: CustomPaint(
                 painter: _NotchedBarPainter(
                   bgColor: Colors.white.withValues(alpha: 0.94),
-                  borderColor: Colors.white.withValues(alpha: 0.9),
+                  borderColor: const Color(0xFFE0E0E0).withValues(alpha: 0.9),
                 ),
                 child: SizedBox(
                   height: barHeight,
@@ -73,7 +73,7 @@ class FloatingNavBar extends StatelessWidget {
                       ),
 
                       // Center Gap for the big floating notch button & label
-                      const SizedBox(width: 54),
+                      const SizedBox(width: 56),
 
                       // Right Item 1: Profile
                       _NavIconItem(
@@ -109,41 +109,45 @@ class FloatingNavBar extends StatelessWidget {
               ),
             ),
 
-            // Prominent Razor-Sharp Circular Floating Action Button (+ New Project) & Label
+            // Prominent Razor-Sharp Circular Floating Action Button (+ New Project)
             Positioned(
               top: 0,
               child: GestureDetector(
                 onTap: () {
                   Navigator.of(context).pushNamed('/create-folder');
                 },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipOval(
-                      clipBehavior: Clip.antiAlias,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        color: brandColor,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.add_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
+                child: ClipOval(
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    color: brandColor,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: Colors.white,
+                      size: 28,
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'New Project',
-                      style: TextStyle(
-                        fontSize: 9.0,
-                        fontWeight: FontWeight.bold,
-                        color: brandColor,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Central "New Project" Label (Perfectly aligned horizontally with all other labels)
+            Positioned(
+              bottom: 5.5,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pushNamed('/create-folder');
+                },
+                child: const Text(
+                  'New Project',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: brandColor,
+                    letterSpacing: 0.1,
+                  ),
                 ),
               ),
             ),

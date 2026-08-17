@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/backend_api.dart';
 import '../services/user_session.dart';
+import '../widgets/floating_nav_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -96,25 +97,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: lightSkyBlue,
         elevation: 0,
-        scrolledUnderElevation: 1,
-        titleSpacing: 16,
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu_rounded, color: Color(0xFF0F172A)),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            );
-          },
-        ),
+        scrolledUnderElevation: 0,
+        titleSpacing: 20,
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: brandColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Image.asset('assets/logo.png', height: 26, width: 26),
+              child: Image.asset('assets/logo.png', height: 24, width: 24),
             ),
             const SizedBox(width: 10),
             Text(
@@ -122,131 +116,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0F172A),
-                fontSize: 19,
+                fontSize: 18,
+                letterSpacing: -0.2,
               ),
             ),
           ],
         ),
       ),
-      drawer: Drawer(
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: Column(
-            children: [
-              UserAccountsDrawerHeader(
-                decoration: const BoxDecoration(
-                  color: brandColor,
-                  image: DecorationImage(
-                    image: AssetImage('assets/logo.png'),
-                    opacity: 0.05,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Text(
-                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-                    style: const TextStyle(
-                      color: brandColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                  ),
-                ),
-                accountName: Text(
-                  _userName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                accountEmail: Text(
-                  _profile['email']?.toString() ??
-                      UserSession.userId ??
-                      'Scholar Workspace',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.dashboard_outlined,
-                  color: brandColor,
-                ),
-                title: const Text(
-                  'Dashboard',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                selected: true,
-                selectedTileColor: brandColor.withValues(alpha: 0.08),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.person_outline_rounded,
-                  color: Color(0xFF475569),
-                ),
-                title: const Text('Profile'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed('/profile');
-                },
-              ),
-              if (_needsProfileCompletion)
-                ListTile(
-                  leading: const Icon(
-                    Icons.warning_amber_rounded,
-                    color: Color(0xFFD97706),
-                  ),
-                  title: const Text('Complete your profile'),
-                  subtitle: const Text(
-                    'Required fields missing',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed(
-                      '/complete-profile',
-                      arguments: {'profile': _profile},
-                    );
-                  },
-                ),
-              const Spacer(),
-              const Divider(indent: 16, endIndent: 16),
-              ListTile(
-                leading: const Icon(
-                  Icons.logout_rounded,
-                  color: Color(0xFFEF4444),
-                ),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(
-                    color: Color(0xFFEF4444),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                onTap: () async {
-                  await UserSession.clear();
-                  if (!context.mounted) return;
-                  Navigator.of(context).pushReplacementNamed('/signin');
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        ),
-      ),
       body: Stack(
         children: [
-          // Background Modern Design Objects
+          // Subtle Ambient Background Shapes
           Positioned(
-            top: -50,
-            right: -40,
+            top: -40,
+            right: -30,
             child: Container(
-              width: 240,
-              height: 240,
+              width: 220,
+              height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -259,30 +144,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           Positioned(
-            top: 280,
-            left: -60,
+            bottom: 100,
+            left: -50,
             child: Container(
               width: 180,
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.07),
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.06),
               ),
             ),
           ),
-          Positioned(
-            bottom: 60,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(60),
-                color: const Color(0xFF0284C7).withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          // Screen Content
+
+          // Main Content
           SafeArea(
             child: RefreshIndicator(
               onRefresh: _refreshProjects,
@@ -298,21 +172,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
                     children: [
-                      // Greeting & Header Card
+                      // Minimal Header Banner
                       _buildHeaderCard(context, theme, brandColor),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
-                      // Missing Profile Warning Banner
+                      // Profile completion warning banner
                       if (_needsProfileCompletion) ...[
                         _buildProfileWarningCard(context, theme),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                       ],
 
-                      // Stats Overview Grid
+                      // Overview Cards
                       _buildQuickStats(projects.length, totalPapers),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // Section Title
                       Row(
@@ -323,11 +197,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
-                              fontSize: 18,
+                              fontSize: 17,
                             ),
                           ),
                           Text(
-                            '${projects.length} Total',
+                            '${projects.length} Active',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF64748B),
                               fontWeight: FontWeight.w600,
@@ -337,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Projects Content State
+                      // List State
                       if (snapshot.connectionState ==
                           ConnectionState.waiting) ...[
                         const SizedBox(height: 40),
@@ -365,28 +239,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).pushNamed('/create-folder').then((_) => _refreshProjects());
-        },
-        elevation: 3,
-        highlightElevation: 6,
-        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
-        label: const Text(
-          'New Project',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            letterSpacing: 0.2,
+
+          // Floating Glassmorphism Bottom Navigation Bar
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 6,
+            child: FloatingNavBar(
+              currentRoute: '/dashboard',
+              needsProfileCompletion: _needsProfileCompletion,
+            ),
           ),
-        ),
-        backgroundColor: brandColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ],
       ),
     );
   }

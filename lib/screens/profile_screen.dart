@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme.dart';
+
+import '../widgets/floating_nav_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -47,154 +48,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              // Profile Header Section
-              Center(
-                child: Column(
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 106,
-                          height: 106,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.3), width: 3.0),
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: const CircleAvatar(
-                            radius: 48,
-                            backgroundImage: NetworkImage(
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuCDjXO6XdfVP3zb59HMwG0pquQ-J-rFjlEydjXls8se839eUpxOxo3bL0RJr9L4LQZzo8IAc7DYmcKWmLraT6Kzmdl6Tnxl0q3tYfF6mkOd4g5ybsZpDEqY6jg2IfzXU6-Uw4NHqO5pRCgmLdcdyPGF609Un814FBXuLAZZ1nsXUGHNfK33eUMUBHI8dWJbXkhA36U0-HypTZjjlzHt69Df6Z7CbxMx1nMdnciVKL3UpcpKGzYxBxWDEDGhhAHE2Iyz8FJW5u77tWE',
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 4,
-                          child: Container(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 24),
+                // Profile Header Section
+                Center(
+                  child: Column(
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 106,
+                            height: 106,
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2.0),
+                              border: Border.all(
+                                color: theme.colorScheme.secondary.withOpacity(0.3),
+                                width: 3.0,
+                              ),
                             ),
                             padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: Colors.white,
+                            child: const CircleAvatar(
+                              radius: 48,
+                              backgroundImage: NetworkImage(
+                                'https://lh3.googleusercontent.com/aida-public/AB6AXuCDjXO6XdfVP3zb59HMwG0pquQ-J-rFjlEydjXls8se839eUpxOxo3bL0RJr9L4LQZzo8IAc7DYmcKWmLraT6Kzmdl6Tnxl0q3tYfF6mkOd4g5ybsZpDEqY6jg2IfzXU6-Uw4NHqO5pRCgmLdcdyPGF609Un814FBXuLAZZ1nsXUGHNfK33eUMUBHI8dWJbXkhA36U0-HypTZjjlzHt69Df6Z7CbxMx1nMdnciVKL3UpcpKGzYxBxWDEDGhhAHE2Iyz8FJW5u77tWE',
+                              ),
                             ),
                           ),
+                          Positioned(
+                            bottom: 0,
+                            right: 4,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2.0),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.verified,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Dr. Julian Vance',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Dr. Julian Vance',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Lead Researcher',
+                      const SizedBox(height: 4),
+                      Text(
+                        'Lead Researcher',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Stanford University • AI Research Lab',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline.withOpacity(0.8),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Stats Row
+                Row(
+                  children: [
+                    _buildStatBox(theme, 'PAPERS', '12'),
+                    const SizedBox(width: 12),
+                    _buildStatBox(theme, 'CITATIONS', '156'),
+                    const SizedBox(width: 12),
+                    _buildStatBox(theme, 'H-INDEX', '8'),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // About Section
+                _buildSectionHeader(theme, 'ABOUT'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Dr. Vance specializes in the intersection of neural networks and ethical governance. With over a decade of experience in quantum machine learning, his work focuses on creating transparent AI systems for public sector applications.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.outline,
-                        fontWeight: FontWeight.w500,
+                        height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Stanford University • AI Research Lab',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline.withOpacity(0.8),
-                        fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                // Active Projects
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionHeader(theme, 'ACTIVE PROJECTS'),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'VIEW ALL',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Stats Row
-              Row(
-                children: [
-                  _buildStatBox(theme, 'PAPERS', '12'),
-                  const SizedBox(width: 12),
-                  _buildStatBox(theme, 'CITATIONS', '156'),
-                  const SizedBox(width: 12),
-                  _buildStatBox(theme, 'H-INDEX', '8'),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // About Section
-              _buildSectionHeader(theme, 'ABOUT'),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Dr. Vance specializes in the intersection of neural networks and ethical governance. With over a decade of experience in quantum machine learning, his work focuses on creating transparent AI systems for public sector applications.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      height: 1.5,
-                    ),
-                  ),
+                const SizedBox(height: 8),
+                _buildProjectCard(
+                  theme: theme,
+                  icon: Icons.hub,
+                  title: 'Decentralized Neural Fabric',
+                  description:
+                      'Investigating distributed inference protocols across quantum-classical hybrid nodes.',
+                  progress: 0.65,
                 ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Active Projects
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSectionHeader(theme, 'ACTIVE PROJECTS'),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'VIEW ALL',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              
-              // Project 1
-              _buildProjectCard(
-                theme: theme,
-                icon: Icons.hub,
-                title: 'Decentralized Neural Fabric',
-                description: 'Investigating distributed inference protocols across quantum-classical hybrid nodes.',
-                progress: 0.65,
-              ),
-              const SizedBox(height: 12),
-              // Project 2
-              _buildProjectCard(
-                theme: theme,
-                icon: Icons.security,
-                title: 'Ethical Latency Models',
-                description: 'Real-time bias detection in high-frequency automated decision engines.',
-                progress: 0.40,
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 12),
+                _buildProjectCard(
+                  theme: theme,
+                  icon: Icons.security,
+                  title: 'Ethical Latency Models',
+                  description:
+                      'Real-time bias detection in high-frequency automated decision engines.',
+                  progress: 0.40,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
-        ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 6,
+            child: FloatingNavBar(currentRoute: '/profile'),
+          ),
+        ],
       ),
     );
   }

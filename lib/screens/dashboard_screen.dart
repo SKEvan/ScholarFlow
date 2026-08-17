@@ -127,20 +127,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF475569),
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new notifications')),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       drawer: Drawer(
         backgroundColor: Colors.white,

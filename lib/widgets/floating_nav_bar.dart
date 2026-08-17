@@ -23,7 +23,7 @@ class FloatingNavBar extends StatelessWidget {
         width: 340,
         height:
             barHeight +
-            14, // Extra height for the elevated central floating button
+            18, // Extra height for the elevated central floating button
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
@@ -72,8 +72,8 @@ class FloatingNavBar extends StatelessWidget {
                         },
                       ),
 
-                      // Center Gap for the big floating notch button
-                      const SizedBox(width: 48),
+                      // Center Gap for the big floating notch button & label
+                      const SizedBox(width: 54),
 
                       // Right Item 1: Profile
                       _NavIconItem(
@@ -88,7 +88,7 @@ class FloatingNavBar extends StatelessWidget {
                         },
                       ),
 
-                      // Right Item 2: Logout (Replaced Projects)
+                      // Right Item 2: Logout
                       _NavIconItem(
                         icon: Icons.logout_rounded,
                         label: 'Logout',
@@ -109,37 +109,41 @@ class FloatingNavBar extends StatelessWidget {
               ),
             ),
 
-            // Prominent Circular Floating Action Button (+ New Project) with Soft/Reduced Shadow
+            // Prominent Razor-Sharp Circular Floating Action Button (+ New Project) & Label
             Positioned(
               top: 0,
               child: GestureDetector(
                 onTap: () {
                   Navigator.of(context).pushNamed('/create-folder');
                 },
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: brandColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: brandColor.withValues(alpha: 0.22),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipOval(
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        color: brandColor,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'New Project',
+                      style: TextStyle(
+                        fontSize: 9.0,
+                        fontWeight: FontWeight.bold,
+                        color: brandColor,
+                        letterSpacing: 0.1,
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -165,11 +169,11 @@ class _NotchedBarPainter extends CustomPainter {
 
     final path = Path();
     path.moveTo(r, 0);
-    path.lineTo(cx - 34, 0);
+    path.lineTo(cx - 36, 0);
 
-    // Smooth organic notch dip in center top
-    path.cubicTo(cx - 20, 0, cx - 20, 23, cx, 23);
-    path.cubicTo(cx + 20, 23, cx + 20, 0, cx + 34, 0);
+    // Smooth anti-aliased organic notch dip around central button
+    path.cubicTo(cx - 22, 0, cx - 22, 24, cx, 24);
+    path.cubicTo(cx + 22, 24, cx + 22, 0, cx + 36, 0);
 
     path.lineTo(w - r, 0);
     path.arcToPoint(Offset(w, r), radius: Radius.circular(r));
@@ -181,18 +185,21 @@ class _NotchedBarPainter extends CustomPainter {
     path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
     path.close();
 
-    // Soft drop shadow
+    // Anti-aliased soft drop shadow for the notched bar
     canvas.drawShadow(path, Colors.black.withValues(alpha: 0.10), 10, true);
 
-    // Background fill
-    final fillPaint = Paint()..color = bgColor;
+    // Background fill with anti-aliasing
+    final fillPaint = Paint()
+      ..color = bgColor
+      ..isAntiAlias = true;
     canvas.drawPath(path, fillPaint);
 
-    // Subtle outline border
+    // Subtle outline border with anti-aliasing
     final borderPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
+      ..strokeWidth = 1.2
+      ..isAntiAlias = true;
     canvas.drawPath(path, borderPaint);
   }
 

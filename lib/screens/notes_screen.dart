@@ -15,7 +15,13 @@ class _NotesScreenState extends State<NotesScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
-  final List<String> _categories = ['ALL', 'RESEARCH', 'MEETING', 'MILESTONE', 'IDEA'];
+  final List<String> _categories = [
+    'ALL',
+    'RESEARCH',
+    'MEETING',
+    'MILESTONE',
+    'IDEA',
+  ];
 
   @override
   void initState() {
@@ -104,55 +110,66 @@ class _NotesScreenState extends State<NotesScreen> {
 
     return Scaffold(
       backgroundColor: lightSkyBlue,
-      appBar: AppBar(
-        backgroundColor: lightSkyBlue,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: brandColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.edit_note_rounded,
-                color: brandColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Research Notes',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.data_object_rounded, color: Color(0xFF475569)),
-            onPressed: _showExportJsonDialog,
-            tooltip: 'View JSON Data',
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_rounded, color: brandColor),
-            onPressed: () => _openEditor(),
-            tooltip: 'New Note',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: Stack(
         children: [
           SafeArea(
             child: Column(
               children: [
+                // Custom Clean App Header (Inside Stack body so nav bar height matches all pages)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: brandColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.edit_note_rounded,
+                              color: brandColor,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Research Notes',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.data_object_rounded,
+                              color: Color(0xFF475569),
+                            ),
+                            onPressed: _showExportJsonDialog,
+                            tooltip: 'View JSON Data',
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: brandColor,
+                            ),
+                            onPressed: () => _openEditor(),
+                            tooltip: 'New Note',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
                 // Search & Filter Header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
@@ -163,7 +180,8 @@ class _NotesScreenState extends State<NotesScreen> {
                         height: 40,
                         child: TextField(
                           controller: _searchController,
-                          onChanged: (val) => setState(() => _searchQuery = val),
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val),
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF0F172A),
@@ -181,7 +199,10 @@ class _NotesScreenState extends State<NotesScreen> {
                             ),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 16),
+                                    icon: const Icon(
+                                      Icons.clear_rounded,
+                                      size: 16,
+                                    ),
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() => _searchQuery = '');

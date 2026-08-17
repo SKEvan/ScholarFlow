@@ -33,7 +33,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_1_outlined, color: Colors.black),
+            icon: const Icon(
+              Icons.person_add_alt_1_outlined,
+              color: Colors.black,
+            ),
             onPressed: () {
               Navigator.of(context).pushNamed('/add-collaborator');
             },
@@ -42,7 +45,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.share, color: Colors.black),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile link copied to clipboard!')),
+                const SnackBar(
+                  content: Text('Profile link copied to clipboard!'),
+                ),
               );
             },
           ),
@@ -69,7 +74,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: theme.colorScheme.secondary.withOpacity(0.3),
+                                color: theme.colorScheme.secondary.withOpacity(
+                                  0.3,
+                                ),
                                 width: 3.0,
                               ),
                             ),
@@ -88,7 +95,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.secondary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.0),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2.0,
+                                ),
                               ),
                               padding: const EdgeInsets.all(4),
                               child: const Icon(
@@ -146,9 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       'Dr. Vance specializes in the intersection of neural networks and ethical governance. With over a decade of experience in quantum machine learning, his work focuses on creating transparent AI systems for public sector applications.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.5,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
                     ),
                   ),
                 ),
@@ -211,7 +219,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -286,12 +296,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       description,
-                      style: TextStyle(color: theme.colorScheme.outline, fontSize: 14, height: 1.4),
+                      style: TextStyle(
+                        color: theme.colorScheme.outline,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -300,8 +317,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(99),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                        backgroundColor: theme.colorScheme.outlineVariant
+                            .withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.secondary,
+                        ),
                         minHeight: 4,
                       ),
                     ),

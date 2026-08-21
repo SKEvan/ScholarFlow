@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
 
 import 'theme.dart';
 import 'services/user_session.dart';
@@ -31,6 +32,7 @@ import 'screens/note_editor_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await UserSession.load();
   runApp(const ScholarFlowApp());
 }
@@ -75,7 +77,8 @@ class ScholarFlowApp extends StatelessWidget {
             '/agent/summary': (context) => const SummaryScreen(),
             '/agent/comparison': (context) => const ComparisonScreen(),
             '/agent/research-gap': (context) => const ResearchGapScreen(),
-            '/agent/literature-review': (context) =>  AgentLiteratureReviewScreen(),
+            '/agent/literature-review': (context) =>
+                AgentLiteratureReviewScreen(),
           },
         );
       },

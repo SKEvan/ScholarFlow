@@ -17,11 +17,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic> _profile = const {};
   List<String> _missingFields = const [];
   bool _profileLoaded = false;
+  bool _showAppBar = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _projectsFuture = BackendApi.listProjects(ownerId: UserSession.userId);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      final delta = notification.scrollDelta ?? 0;
+      // Scrolling down the list (sliding content up): hide AppBar
+      if (delta > 0.5) {
+        if (_showAppBar) {
+          setState(() => _showAppBar = false);
+        }
+      }
+      // Scrolling up the list (sliding content down): reappear AppBar
+      else if (delta < -0.5) {
+        if (!_showAppBar) {
+          setState(() => _showAppBar = true);
+        }
+      }
+    } else if (notification is OverscrollNotification) {
+      if (notification.overscroll < 0) {
+        if (!_showAppBar) {
+          setState(() => _showAppBar = true);
+        }
+      }
+    }
+    return false;
   }
 
   @override
@@ -92,25 +125,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     const brandColor = Color(0xFF017ECB);
     const lightSkyBlue = Color(0xFFEAF4FB);
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
       backgroundColor: lightSkyBlue,
-      appBar: AppBar(
-        backgroundColor: lightSkyBlue,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'ScholarFlow',
-          style: GoogleFonts.monteCarlo(
-            textStyle: theme.textTheme.titleLarge,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0F172A),
-            fontSize: 30,
-          ),
-        ),
-      ),
       body: Stack(
         children: [
           // Subtle Ambient Background Shapes
@@ -145,10 +163,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           // Main Content
-          SafeArea(
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScrollNotification,
             child: RefreshIndicator(
               onRefresh: _refreshProjects,
               color: brandColor,
+              edgeOffset: topPadding + kToolbarHeight,
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: _projectsFuture,
                 builder: (context, snapshot) {
@@ -160,7 +180,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      topPadding + kToolbarHeight + 8,
+                      20,
+                      120,
+                    ),
                     children: [
                       // Minimal Header Banner
                       _buildHeaderCard(context, theme, brandColor),
@@ -204,10 +231,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ConnectionState.waiting) ...[
                         const SizedBox(height: 40),
                         const Center(
-                          child: CircularProgressIndicator(color: brandColor),
+                          child: CircularProgressIndicator(
+                            color: brandColor,
+                          ),
                         ),
                       ] else if (snapshot.hasError) ...[
-                        _buildErrorCard(snapshot.error.toString(), brandColor),
+                        _buildErrorCard(
+                          snapshot.error.toString(),
+                          brandColor,
+                        ),
                       ] else if (projects.isEmpty) ...[
                         _buildEmptyState(context, brandColor),
                       ] else ...[
@@ -224,6 +256,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   );
                 },
+              ),
+            ),
+          ),
+
+          // Collapsible Animated Top AppBar (slides in only on fast scroll up or top of screen)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedSlide(
+              offset: _showAppBar ? Offset.zero : const Offset(0, -1),
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              child: AnimatedOpacity(
+                opacity: _showAppBar ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  color: lightSkyBlue,
+                  child: SafeArea(
+                    bottom: false,
+                    child: SizedBox(
+                      height: kToolbarHeight,
+                      child: Center(
+                        child: Text(
+                          'ScholarFlow',
+                          style: GoogleFonts.monteCarlo(
+                            textStyle: theme.textTheme.titleLarge,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF0F172A),
+                            fontSize: 35,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

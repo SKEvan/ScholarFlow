@@ -17,19 +17,23 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
   final List<Map<String, String>> _recentCollaborators = [
     {
       'name': 'Dr. Aris',
-      'url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuC7shefmkSeKzrjdVdVTQ5DaLtca3cEjXKaQgVTx1m6H7iJhnSRFN_-tz3cfGMN3AZn_Sgf-s1lRFG_YypEAz7i-RF0DiemIqsLSpkDq76o3haf3cYltP0cKrat_RTySQb3y0hCEORq9s0Ae4-fsF6SODn-pINtjsBxZp-SU2YL6Y2XeKB6eZ0bispyblN9Yb9E1MhgjjHw9pN_VrMsqJKZZrZd1esc658MpmCvLiET6r94j0wW7mUbkNqPW79SDIQw0TUhihfMgk8',
+      'url':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuC7shefmkSeKzrjdVdVTQ5DaLtca3cEjXKaQgVTx1m6H7iJhnSRFN_-tz3cfGMN3AZn_Sgf-s1lRFG_YypEAz7i-RF0DiemIqsLSpkDq76o3haf3cYltP0cKrat_RTySQb3y0hCEORq9s0Ae4-fsF6SODn-pINtjsBxZp-SU2YL6Y2XeKB6eZ0bispyblN9Yb9E1MhgjjHw9pN_VrMsqJKZZrZd1esc658MpmCvLiET6r94j0wW7mUbkNqPW79SDIQw0TUhihfMgk8',
     },
     {
       'name': 'Prof. Miller',
-      'url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZ7PlM8MwNr8HArysnj5L0m3w5yD6JCDFu0nTrUZs0P40hIpssKZbQmRP5CJvp2lraHlFmNTSPGaW6_ZldmJhSz3fejb1ALzMw6AHU5LfhheMBe-kHbIs5tWw8ZOFTHhxXfRBYFA0YjpkSmskynl4Im2IOgjPgFVshLGYljrGH63SWHEP9Pg_TO-yBpfanvER2L5iqCo0nW9ILFnVTYi2sZR1aRcndPGAdDEyxNBZo7bSNWNMyV5IMr2AGjdhr_FxqkpsFGDz_PJ8',
+      'url':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuDZ7PlM8MwNr8HArysnj5L0m3w5yD6JCDFu0nTrUZs0P40hIpssKZbQmRP5CJvp2lraHlFmNTSPGaW6_ZldmJhSz3fejb1ALzMw6AHU5LfhheMBe-kHbIs5tWw8ZOFTHhxXfRBYFA0YjpkSmskynl4Im2IOgjPgFVshLGYljrGH63SWHEP9Pg_TO-yBpfanvER2L5iqCo0nW9ILFnVTYi2sZR1aRcndPGAdDEyxNBZo7bSNWNMyV5IMr2AGjdhr_FxqkpsFGDz_PJ8',
     },
     {
       'name': 'S. Zhang',
-      'url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsxjZBK9b0zyYwmNk4LNzFtRfeE08FTPfuFD3Ktcw2IoRK3RrGh42tkcxv-xYLz_9k7ww0w85SNYuAhsB51gjpObTC9T3iixoiJLIgsj6ZSBp2nHNA2-7puKm1-t1bKwXG4F1NVk-uGoqUryPptYXs8GP-wbpF5Tx3ewzcpPEmn1gUYEKcByQhCkayydu4I6r66nesy0vMzUCpUMXYA6pYPTYlP7TNNx71j_phI_uXkykhN7Dl24Lubq6wnXPVWAxgu1ZfhFfzyr4',
+      'url':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuAsxjZBK9b0zyYwmNk4LNzFtRfeE08FTPfuFD3Ktcw2IoRK3RrGh42tkcxv-xYLz_9k7ww0w85SNYuAhsB51gjpObTC9T3iixoiJLIgsj6ZSBp2nHNA2-7puKm1-t1bKwXG4F1NVk-uGoqUryPptYXs8GP-wbpF5Tx3ewzcpPEmn1gUYEKcByQhCkayydu4I6r66nesy0vMzUCpUMXYA6pYPTYlP7TNNx71j_phI_uXkykhN7Dl24Lubq6wnXPVWAxgu1ZfhFfzyr4',
     },
     {
       'name': 'L. Gomez',
-      'url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuAkn_Uzh8YaPdbAGh_zoJLhaAeXM4JWGn4cVS-s0ErNguHHU_9OpjNR_gbyCLI0ft0XDerO6uOpKxnKu8AVEsm1p2UnbpO64HjvDlGzzywocZqSV0cTPP-Cb1L3hapWodpGkbT7g0NiGrCNuwk2h_Tbx2g91PMNm_aMFghMp5RJLJHacIkaP35GmjSvixqfVXRtaWnQZYp7Q8h6y7TnVibcMudfyQirmYy4xJPRLwFgkkKVpnLHRcdgTlb48fQIBkt106oyNnZ82fA',
+      'url':
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuAkn_Uzh8YaPdbAGh_zoJLhaAeXM4JWGn4cVS-s0ErNguHHU_9OpjNR_gbyCLI0ft0XDerO6uOpKxnKu8AVEsm1p2UnbpO64HjvDlGzzywocZqSV0cTPP-Cb1L3hapWodpGkbT7g0NiGrCNuwk2h_Tbx2g91PMNm_aMFghMp5RJLJHacIkaP35GmjSvixqfVXRtaWnQZYp7Q8h6y7TnVibcMudfyQirmYy4xJPRLwFgkkKVpnLHRcdgTlb48fQIBkt106oyNnZ82fA',
     },
   ];
 
@@ -79,7 +83,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
         title: Text(
           'Add Collaborator',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
           ),
         ),
@@ -107,7 +111,9 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                       Container(
                         height: 160,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.outlineVariant.withOpacity(0.15),
+                          color: theme.colorScheme.outlineVariant.withOpacity(
+                            0.15,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -123,7 +129,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                               'DIGITAL SCHOLASTICISM',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w500,
                                 letterSpacing: 0.1,
                                 fontSize: 11,
                               ),
@@ -145,7 +151,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                         'EMAIL ADDRESS',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           fontSize: 11,
                         ),
                       ),
@@ -177,7 +183,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                         'PERMISSION LEVEL',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.outline,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           fontSize: 11,
                         ),
                       ),
@@ -217,7 +223,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                             'RECENT COLLABORATORS',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.outline,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -227,7 +233,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                               'VIEW ALL',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.secondary,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w500,
                                 fontSize: 11,
                               ),
                             ),
@@ -250,20 +256,27 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 26,
-                                    backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                                    backgroundImage: NetworkImage(collab['url']!),
+                                    backgroundColor: theme
+                                        .colorScheme
+                                        .outlineVariant
+                                        .withOpacity(0.3),
+                                    backgroundImage: NetworkImage(
+                                      collab['url']!,
+                                    ),
                                     child: ClipOval(
                                       child: Image.network(
                                         collab['url']!,
                                         fit: BoxFit.cover,
                                         width: 52,
                                         height: 52,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.person,
-                                            color: theme.colorScheme.primary,
-                                          );
-                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.person,
+                                                color:
+                                                    theme.colorScheme.primary,
+                                              );
+                                            },
                                       ),
                                     ),
                                   ),
@@ -286,10 +299,12 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                       // AI Insight Card
                       Container(
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.secondaryContainer.withOpacity(0.08),
+                          color: theme.colorScheme.secondaryContainer
+                              .withOpacity(0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                            color: theme.colorScheme.secondaryContainer
+                                .withOpacity(0.2),
                           ),
                         ),
                         padding: const EdgeInsets.all(16),
@@ -310,7 +325,7 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                                     'AI INSIGHT',
                                     style: theme.textTheme.labelLarge?.copyWith(
                                       color: theme.colorScheme.secondary,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w500,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -318,7 +333,8 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                                   Text(
                                     "Collaborators with 'Editor' access can annotate papers and trigger shared citations in real-time.",
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.7),
                                     ),
                                   ),
                                 ],
@@ -349,7 +365,9 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(width: 12),
@@ -357,22 +375,26 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                           ],
                         )
                       : _isSent
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check_circle, size: 20, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text('Invite Sent'),
-                              ],
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Send Invitation'),
-                                SizedBox(width: 8),
-                                Icon(Icons.send, size: 18),
-                              ],
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 20,
+                              color: Colors.green,
                             ),
+                            SizedBox(width: 8),
+                            Text('Invite Sent'),
+                          ],
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Send Invitation'),
+                            SizedBox(width: 8),
+                            Icon(Icons.send, size: 18),
+                          ],
+                        ),
                 ),
               ),
             ),

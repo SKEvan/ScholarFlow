@@ -144,7 +144,7 @@ class FloatingNavBar extends StatelessWidget {
                   'New Project',
                   style: TextStyle(
                     fontSize: 9.5,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: brandColor,
                     letterSpacing: 0.1,
                   ),
@@ -275,7 +275,7 @@ class _NavIconItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 9.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w500 : FontWeight.w500,
                 color: color,
               ),
             ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/user_session.dart';
 
@@ -141,11 +142,11 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           Text(
                             'ScholarFlow',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            style: GoogleFonts.monteCarlo(
+                              textStyle: theme.textTheme.titleLarge,
+                              fontWeight: FontWeight.w600,
+                              color: const Color.fromARGB(255, 255, 255, 255),
                               fontSize: 28,
-                              letterSpacing: -0.5,
-                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -154,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen>
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: Colors.white.withOpacity(0.84),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 1.5,
                             ),
                           ),

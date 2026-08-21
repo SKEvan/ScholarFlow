@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/backend_api.dart';
 import '../services/user_session.dart';
@@ -98,29 +99,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: lightSkyBlue,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleSpacing: 20,
+        centerTitle: true,
         automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: brandColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Image.asset('assets/logo.png', height: 24, width: 24),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'ScholarFlow',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
-                fontSize: 18,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
+        title: Text(
+          'ScholarFlow',
+          style: GoogleFonts.monteCarlo(
+            textStyle: theme.textTheme.titleLarge,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF0F172A),
+            fontSize: 30,
+          ),
         ),
       ),
       body: Stack(
@@ -195,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Text(
                             'Running Projects',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               color: const Color(0xFF0F172A),
                               fontSize: 17,
                             ),
@@ -204,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             '${projects.length} Active',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF64748B),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -297,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _userName.isNotEmpty ? _userName[0].toUpperCase() : 'S',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       fontSize: 20,
                     ),
                   ),
@@ -324,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -407,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     'Complete Your Profile',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       fontSize: 14,
                       color: Color(0xFF92400E),
                     ),
@@ -483,7 +471,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Text(
             'No Running Projects Yet',
             style: TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               fontSize: 16,
               color: Color(0xFF0F172A),
             ),
@@ -534,7 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Text(
             'Could not load projects',
             style: TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: Color(0xFF991B1B),
               fontSize: 15,
             ),
@@ -616,7 +604,7 @@ class _StatCard extends StatelessWidget {
             value,
             style: const TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: Color(0xFF0F172A),
             ),
           ),
@@ -703,7 +691,7 @@ class _ProjectCard extends StatelessWidget {
                         Text(
                           title,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: const Color(0xFF0F172A),
                             fontSize: 16,
                           ),
@@ -738,7 +726,7 @@ class _ProjectCard extends StatelessWidget {
                       status.toUpperCase(),
                       style: TextStyle(
                         color: statusTextColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         fontSize: 10,
                         letterSpacing: 0.5,
                       ),
@@ -796,7 +784,7 @@ class _StatBadge extends StatelessWidget {
           label,
           style: const TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: Color(0xFF475569),
           ),
         ),

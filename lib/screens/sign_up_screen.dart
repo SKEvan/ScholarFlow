@@ -194,7 +194,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.displayLarge?.copyWith(
                         fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                     ),
@@ -253,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           textStyle: theme.textTheme.titleSmall
                                               ?.copyWith(
                                                 fontSize: 15,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -281,7 +281,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           textStyle: theme.textTheme.titleSmall
                                               ?.copyWith(
                                                 fontSize: 15,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -472,7 +472,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     style: theme.textTheme.labelLarge?.copyWith(
                                       color: theme.colorScheme.outline,
                                       fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
@@ -513,7 +513,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         'Google',
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                       ),
                                       style: OutlinedButton.styleFrom(
@@ -560,7 +560,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         'LinkedIn',
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                       ),
                                       style: OutlinedButton.styleFrom(
@@ -604,7 +604,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         text,
         style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.outline,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           fontSize: 11,
         ),
       ),

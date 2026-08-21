@@ -36,7 +36,7 @@ void showAddToProjectSheet(BuildContext context) {
                     'Add to Project',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: theme.colorScheme.secondary,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       fontSize: 18,
                     ),
                   ),
@@ -74,7 +74,7 @@ void showAddToProjectSheet(BuildContext context) {
               const SizedBox(height: 16),
 
               const Divider(),
-              
+
               // Cancel Button
               SizedBox(
                 width: double.infinity,
@@ -84,7 +84,7 @@ void showAddToProjectSheet(BuildContext context) {
                     'CANCEL',
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.outline,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -116,7 +116,9 @@ Widget _buildOption(
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -128,17 +130,14 @@ Widget _buildOption(
               color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: theme.colorScheme.secondary,
-            ),
+            child: Icon(icon, color: theme.colorScheme.secondary),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: theme.colorScheme.primary,
               ),
             ),

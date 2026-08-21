@@ -79,7 +79,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
               setState(() {
                 _isUploading = false;
               });
-              
+
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -93,7 +93,9 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                       const Text('Upload Success'),
                     ],
                   ),
-                  content: const Text('Paper uploaded and indexed successfully!'),
+                  content: const Text(
+                    'Paper uploaded and indexed successfully!',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () {
@@ -121,7 +123,8 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
     );
     if (picked != null) {
       setState(() {
-        _dateController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _dateController.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -143,7 +146,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
         title: Text(
           'Upload Paper',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
           ),
         ),
@@ -166,7 +169,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                             'DOCUMENT SOURCE',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.outline,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -193,7 +196,8 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: theme.colorScheme.secondary.withOpacity(0.1),
+                                        color: theme.colorScheme.secondary
+                                            .withOpacity(0.1),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
@@ -205,20 +209,22 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                     const SizedBox(height: 12),
                                     Text(
                                       _selectedFileName ?? 'Select PDF File',
-                                      style: theme.textTheme.headlineSmall?.copyWith(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.colorScheme.primary,
-                                      ),
+                                      style: theme.textTheme.headlineSmall
+                                          ?.copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: theme.colorScheme.primary,
+                                          ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       _selectedFileName != null
                                           ? '${_selectedFileSize}MB • Ready to upload'
                                           : 'Max size: 50MB',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.outline,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.outline,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -232,7 +238,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                             'PAPER METADATA',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.outline,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -243,7 +249,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                             'Paper Title',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.secondary,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -267,7 +273,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                             'Authors',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.secondary,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -295,11 +301,12 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                   children: [
                                     Text(
                                       'Publication Date',
-                                      style: theme.textTheme.labelLarge?.copyWith(
-                                        color: theme.colorScheme.secondary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            color: theme.colorScheme.secondary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 11,
+                                          ),
                                     ),
                                     const SizedBox(height: 6),
                                     TextFormField(
@@ -308,7 +315,10 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                       onTap: _selectDate,
                                       decoration: const InputDecoration(
                                         hintText: 'YYYY-MM-DD',
-                                        suffixIcon: Icon(Icons.calendar_today, size: 18),
+                                        suffixIcon: Icon(
+                                          Icons.calendar_today,
+                                          size: 18,
+                                        ),
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -327,11 +337,12 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                   children: [
                                     Text(
                                       'Project',
-                                      style: theme.textTheme.labelLarge?.copyWith(
-                                        color: theme.colorScheme.secondary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            color: theme.colorScheme.secondary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 11,
+                                          ),
                                     ),
                                     const SizedBox(height: 6),
                                     DropdownButtonFormField<String>(
@@ -370,7 +381,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                             'Tags',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.secondary,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               fontSize: 11,
                             ),
                           ),
@@ -397,10 +408,12 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                           // AI Insight
                           Container(
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer.withOpacity(0.08),
+                              color: theme.colorScheme.secondaryContainer
+                                  .withOpacity(0.08),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                                color: theme.colorScheme.secondaryContainer
+                                    .withOpacity(0.2),
                               ),
                             ),
                             padding: const EdgeInsets.all(16),
@@ -415,22 +428,27 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'AI PROCESSING ENABLED',
-                                        style: theme.textTheme.labelLarge?.copyWith(
-                                          color: theme.colorScheme.secondary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
-                                        ),
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              color:
+                                                  theme.colorScheme.secondary,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 11,
+                                            ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         "Uploading will automatically generate a summary, extract key findings, and map citations to your graph.",
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.7),
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -485,14 +503,19 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                               child: CircularProgressIndicator(
                                 value: _uploadProgress,
                                 strokeWidth: 6,
-                                backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                                backgroundColor: theme
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withOpacity(0.5),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.secondary,
+                                ),
                               ),
                             ),
                             Text(
                               '${(_uploadProgress * 100).toInt()}%',
                               style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w500,
                                 color: theme.colorScheme.secondary,
                               ),
                             ),
@@ -502,7 +525,7 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
                         Text(
                           'Analyzing Manuscript',
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -529,15 +552,13 @@ class _UploadPaperScreenState extends State<UploadPaperScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.secondary.withOpacity(0.2),
-        ),
+        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.2)),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           color: theme.colorScheme.secondary,
         ),
       ),
@@ -550,10 +571,7 @@ class DashedRectPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  DashedRectPainter({
-    required this.color,
-    this.strokeWidth = 1.5,
-  });
+  DashedRectPainter({required this.color, this.strokeWidth = 1.5});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -563,10 +581,12 @@ class DashedRectPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(12),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          const Radius.circular(12),
+        ),
+      );
 
     const dashWidth = 8.0;
     const dashSpace = 4.0;

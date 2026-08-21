@@ -25,13 +25,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       'icon': Icons.compare_arrows,
       'title': 'Comparison Gap',
       'endpoint': '/agents/comparison',
-      'choices': ['Overall Comparison', 'Similarity and Difference', 'Strength and Limitation'],
+      'choices': [
+        'Overall Comparison',
+        'Similarity and Difference',
+        'Strength and Limitation',
+      ],
     },
     {
       'icon': Icons.search,
       'title': 'Research Gap',
       'endpoint': '/agents/research-gap',
-      'choices': ['Research Gaps', 'Future Research Opportunities', 'Strengths and Limitations'],
+      'choices': [
+        'Research Gaps',
+        'Future Research Opportunities',
+        'Strengths and Limitations',
+      ],
     },
     {
       'icon': Icons.menu_book,
@@ -41,7 +49,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     },
   ];
 
-  String? _projectId;                              // UUID → String? (was int?)
+  String? _projectId; // UUID → String? (was int?)
   String _projectTitle = 'Project';
   bool _isLoading = false;
   bool _isSavingVersion = false;
@@ -130,10 +138,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   // Map from tool title → dedicated route
   static const _toolRoutes = {
-    'Generate Summary'  : '/agent/summary',
-    'Comparison Gap'    : '/agent/comparison',
-    'Research Gap'      : '/agent/research-gap',
-    'Literature Review' : '/agent/literature-review',
+    'Generate Summary': '/agent/summary',
+    'Comparison Gap': '/agent/comparison',
+    'Research Gap': '/agent/research-gap',
+    'Literature Review': '/agent/literature-review',
   };
 
   void _openAgentScreen(Map<String, dynamic> tool) {
@@ -142,9 +150,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     Navigator.of(context).pushNamed(
       route,
       arguments: {
-        'projectId'   : _projectId,
+        'projectId': _projectId,
         'projectTitle': _projectTitle,
-        'papers'      : _projectPapers,
+        'papers': _projectPapers,
       },
     );
   }
@@ -188,7 +196,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       final snapshotName = _versionNameController.text.trim();
                       if (snapshotName.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Version name is required.')),
+                          const SnackBar(
+                            content: Text('Version name is required.'),
+                          ),
                         );
                         return;
                       }
@@ -199,7 +209,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                       try {
                         final version = await BackendApi.saveVersion(
-                          projectId: _projectId!,  // String UUID
+                          projectId: _projectId!, // String UUID
                           snapshotName: snapshotName,
                           versionMessage: _versionNoteController.text.trim(),
                         );
@@ -209,7 +219,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                         setState(() {
                           _isSavingVersion = false;
-                          _versions = [Map<String, dynamic>.from(version), ..._versions];
+                          _versions = [
+                            Map<String, dynamic>.from(version),
+                            ..._versions,
+                          ];
                         });
                         Navigator.of(dialogContext).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,7 +236,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           _isSavingVersion = false;
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Version save failed: $error')),
+                          SnackBar(
+                            content: Text('Version save failed: $error'),
+                          ),
                         );
                       }
                     },
@@ -255,21 +270,32 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Version History', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Version History',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
+                ),
                 const SizedBox(height: 12),
                 ...(_versions.isEmpty
                     ? <Widget>[const Text('No saved versions yet.')]
                     : _versions.map((version) {
                         return Card(
                           child: ListTile(
-                            title: Text(version['snapshot_name']?.toString() ?? 'Unnamed version'),
-                            subtitle: Text(version['version_message']?.toString() ?? ''),
+                            title: Text(
+                              version['snapshot_name']?.toString() ??
+                                  'Unnamed version',
+                            ),
+                            subtitle: Text(
+                              version['version_message']?.toString() ?? '',
+                            ),
                             trailing: const Icon(Icons.restore),
                             onTap: () async {
                               try {
                                 await BackendApi.restoreVersion(
                                   projectId: _projectId!,
-                                  versionId: version['id'].toString(), // UUID → String, no int.parse
+                                  versionId: version['id']
+                                      .toString(), // UUID → String, no int.parse
                                 );
                                 if (!mounted) {
                                   return;
@@ -277,14 +303,20 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 Navigator.of(sheetContext).pop();
                                 await _loadRepository();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Version restored.')),
+                                  const SnackBar(
+                                    content: Text('Version restored.'),
+                                  ),
                                 );
                               } catch (error) {
                                 if (!mounted) {
                                   return;
                                 }
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Version restore failed: $error')),
+                                  SnackBar(
+                                    content: Text(
+                                      'Version restore failed: $error',
+                                    ),
+                                  ),
                                 );
                               }
                             },
@@ -326,7 +358,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             controlAffinity: ListTileControlAffinity.leading,
             title: Text(
               paper['title']?.toString() ?? 'Untitled paper',
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
             subtitle: Text(
               '${paper['authors'] ?? 'Unknown authors'} • ${paper['year'] ?? ''} • ${paper['citations'] ?? 0} citations',
@@ -350,7 +384,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     isExpanded ? 'Hide details' : 'View details',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.secondary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const Spacer(),
@@ -369,29 +403,49 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35)),
+                  top: BorderSide(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.35,
+                    ),
+                  ),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 10),
-                  Text('Abstract', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Abstract',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     abstractText.isEmpty ? 'No abstract stored.' : abstractText,
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 10),
-                  Text('Publication Info', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Publication Info',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('DOI: ${doi.isEmpty ? 'N/A' : doi}', style: theme.textTheme.bodySmall),
+                  Text(
+                    'DOI: ${doi.isEmpty ? 'N/A' : doi}',
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 2),
                   _buildLinkRow(theme, label: 'Paper URL', url: paperUrl),
                   _buildLinkRow(theme, label: 'DOI Link', url: doiUrl),
                   _buildLinkRow(theme, label: 'PDF', url: pdfUrl),
                   const SizedBox(height: 2),
-                  Text('Fetched at: ${paper['fetched_at'] ?? 'N/A'}', style: theme.textTheme.bodySmall),
+                  Text(
+                    'Fetched at: ${paper['fetched_at'] ?? 'N/A'}',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
@@ -409,7 +463,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,12 +476,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 color: theme.colorScheme.secondaryContainer.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(tool['icon'] as IconData, color: theme.colorScheme.secondary, size: 22),
+              child: Icon(
+                tool['icon'] as IconData,
+                color: theme.colorScheme.secondary,
+                size: 22,
+              ),
             ),
             const Spacer(),
             Text(
               tool['title'] as String,
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Row(
@@ -434,12 +496,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   'Open',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontSize: 11,
                   ),
                 ),
                 const SizedBox(width: 2),
-                Icon(Icons.arrow_forward, size: 12, color: theme.colorScheme.secondary),
+                Icon(
+                  Icons.arrow_forward,
+                  size: 12,
+                  color: theme.colorScheme.secondary,
+                ),
               ],
             ),
           ],
@@ -449,7 +515,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   /// Renders a labelled clickable link row. Shows "N/A" text if url is empty.
-  Widget _buildLinkRow(ThemeData theme, {required String label, required String url}) {
+  Widget _buildLinkRow(
+    ThemeData theme, {
+    required String label,
+    required String url,
+  }) {
     final isEmpty = url.isEmpty || url == 'null';
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -497,37 +567,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           .split(' ')
           .map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1))
           .join(' ');
-      widgets.add(Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-            ),
-            _buildJsonValue(theme, value),
-          ],
+              _buildJsonValue(theme, value),
+            ],
+          ),
         ),
-      ));
+      );
     });
     return widgets;
   }
 
   Widget _buildJsonValue(ThemeData theme, dynamic value) {
     if (value is String) {
-      return Text(value, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5));
+      return Text(
+        value,
+        style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+      );
     }
     if (value is List) {
       return Column(
@@ -541,7 +620,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,10 +638,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               children: [
                 Container(
                   margin: const EdgeInsets.only(top: 7, right: 8),
-                  width: 5, height: 5,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.secondary),
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.secondary,
+                  ),
                 ),
-                Expanded(child: Text(item.toString(), style: theme.textTheme.bodyMedium?.copyWith(height: 1.5))),
+                Expanded(
+                  child: Text(
+                    item.toString(),
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
+                ),
               ],
             ),
           );
@@ -568,7 +658,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       );
     }
     if (value is Map<String, dynamic>) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: _buildJsonSections(theme, value));
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildJsonSections(theme, value),
+      );
     }
     return Text(value.toString(), style: theme.textTheme.bodyMedium);
   }
@@ -589,7 +682,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         title: Text(
           _projectTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
             fontSize: 18,
           ),
@@ -609,13 +702,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadRepository,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadRepository,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -623,7 +716,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant
+                                  .withOpacity(0.5),
+                            ),
                           ),
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -632,11 +728,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('PROJECT REPOSITORY', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 10)),
+                                  Text(
+                                    'PROJECT REPOSITORY',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                   const SizedBox(height: 6),
-                                  Text(_projectTitle, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    _projectTitle,
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(fontWeight: FontWeight.w500),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text('${_projectPapers.length} papers • ${_versions.length} saved versions'),
+                                  Text(
+                                    '${_projectPapers.length} papers • ${_versions.length} saved versions',
+                                  ),
                                 ],
                               ),
                               Stack(
@@ -648,8 +756,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     child: CircularProgressIndicator(
                                       value: _projectPapers.isEmpty ? 0.0 : 0.6,
                                       strokeWidth: 5,
-                                      backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-                                      valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                                      backgroundColor: theme
+                                          .colorScheme
+                                          .outlineVariant
+                                          .withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        theme.colorScheme.secondary,
+                                      ),
                                     ),
                                   ),
                                   Text('${(_projectPapers.isEmpty ? 0 : 60)}%'),
@@ -687,11 +800,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
-                            Text('Research Papers', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Research Papers',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               '(${_projectPapers.where((p) => (p['citations'] as num? ?? 0) > 0).length} with citations)',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                              ),
                             ),
                           ],
                         ),
@@ -702,12 +822,20 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         child: _projectPapers.isEmpty
                             ? const Text('No papers were fetched yet.')
                             : ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 380),
+                                constraints: const BoxConstraints(
+                                  maxHeight: 380,
+                                ),
                                 child: SingleChildScrollView(
                                   child: Column(
                                     children: _projectPapers
-                                        .where((p) => (p['citations'] as num? ?? 0) > 0)
-                                        .map((paper) => _buildPaperCard(theme, paper))
+                                        .where(
+                                          (p) =>
+                                              (p['citations'] as num? ?? 0) > 0,
+                                        )
+                                        .map(
+                                          (paper) =>
+                                              _buildPaperCard(theme, paper),
+                                        )
                                         .toList(),
                                   ),
                                 ),
@@ -717,7 +845,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       // ── AI Collaboration Tools (always visible) ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('AI Collaboration Tools', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        child: Text(
+                          'AI Collaboration Tools',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Padding(
@@ -729,7 +862,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.9,
-                          children: _aiTools.map((tool) => _buildAIToolTile(theme, tool)).toList(),
+                          children: _aiTools
+                              .map((tool) => _buildAIToolTile(theme, tool))
+                              .toList(),
                         ),
                       ),
                       const SizedBox(height: 24),

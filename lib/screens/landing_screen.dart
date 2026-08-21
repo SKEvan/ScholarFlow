@@ -68,13 +68,26 @@ class _LandingScreenState extends State<LandingScreen> {
                     children: [
                       Row(
                         children: [
-                          Image.asset('assets/logo.png', height: 32),
-                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Image.asset(
+                              'assets/logo.png',
+                              height: 30,
+                              width: 30,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
                           Text(
                             'ScholarFlow',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            style: GoogleFonts.monteCarlo(
+                              textStyle: theme.textTheme.titleLarge,
+                              fontWeight: FontWeight.w600,
+                              color: const Color.fromARGB(255, 255, 255, 255),
+                              fontSize: 30,
                             ),
                           ),
                         ],
@@ -86,7 +99,7 @@ class _LandingScreenState extends State<LandingScreen> {
                             'SKIP',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: Colors.white.withOpacity(0.84),
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         )
@@ -234,7 +247,7 @@ class _LandingScreenState extends State<LandingScreen> {
                 category.toUpperCase(),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -249,7 +262,7 @@ class _LandingScreenState extends State<LandingScreen> {
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium?.copyWith(
               color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               fontSize: 22,
             ),
           ),
@@ -490,7 +503,7 @@ class _LandingScreenState extends State<LandingScreen> {
           icon: const Icon(Icons.arrow_forward, size: 18),
           style: TextButton.styleFrom(
             foregroundColor: theme.colorScheme.secondary,
-            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            textStyle: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -546,7 +559,7 @@ class _LandingScreenState extends State<LandingScreen> {
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium?.copyWith(
               color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               fontSize: 22,
             ),
           ),

@@ -20,7 +20,7 @@ class InsightsScreen extends StatelessWidget {
         title: Text(
           'Research Insights',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
             fontSize: 18,
           ),
@@ -63,7 +63,8 @@ class InsightsScreen extends StatelessWidget {
                         painter: PercentileGaugePainter(
                           percentile: 84,
                           activeColor: theme.colorScheme.secondary,
-                          trackColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                          trackColor: theme.colorScheme.outlineVariant
+                              .withOpacity(0.3),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -102,12 +103,37 @@ class InsightsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildBarColumn(theme, 'JAN', 0.30, Colors.blue.withOpacity(0.2)),
-                          _buildBarColumn(theme, 'FEB', 0.45, Colors.blue.withOpacity(0.4)),
-                          _buildBarColumn(theme, 'MAR', 0.75, Colors.blue.withOpacity(0.6)),
+                          _buildBarColumn(
+                            theme,
+                            'JAN',
+                            0.30,
+                            Colors.blue.withOpacity(0.2),
+                          ),
+                          _buildBarColumn(
+                            theme,
+                            'FEB',
+                            0.45,
+                            Colors.blue.withOpacity(0.4),
+                          ),
+                          _buildBarColumn(
+                            theme,
+                            'MAR',
+                            0.75,
+                            Colors.blue.withOpacity(0.6),
+                          ),
                           _buildBarColumn(theme, 'APR', 0.90, Colors.blue),
-                          _buildBarColumn(theme, 'MAY', 0.55, Colors.blue.withOpacity(0.5)),
-                          _buildBarColumn(theme, 'JUN', 0.80, Colors.blue.withOpacity(0.7)),
+                          _buildBarColumn(
+                            theme,
+                            'MAY',
+                            0.55,
+                            Colors.blue.withOpacity(0.5),
+                          ),
+                          _buildBarColumn(
+                            theme,
+                            'JUN',
+                            0.80,
+                            Colors.blue.withOpacity(0.7),
+                          ),
                         ],
                       ),
                     ),
@@ -122,20 +148,27 @@ class InsightsScreen extends StatelessWidget {
                 children: [
                   _buildSectionTitle(theme, 'CITATION GROWTH'),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green[50],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.trending_up, size: 14, color: Colors.green[700]),
+                        Icon(
+                          Icons.trending_up,
+                          size: 14,
+                          color: Colors.green[700],
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           '+15%',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                             color: Colors.green[700],
                           ),
                         ),
@@ -169,7 +202,7 @@ class InsightsScreen extends StatelessWidget {
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.outline,
                         fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -213,13 +246,18 @@ class InsightsScreen extends StatelessWidget {
       style: theme.textTheme.labelLarge?.copyWith(
         color: theme.colorScheme.outline,
         fontSize: 10,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w500,
         letterSpacing: 1.0,
       ),
     );
   }
 
-  Widget _buildBarColumn(ThemeData theme, String label, double ratio, Color color) {
+  Widget _buildBarColumn(
+    ThemeData theme,
+    String label,
+    double ratio,
+    Color color,
+  ) {
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -229,7 +267,9 @@ class InsightsScreen extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 6.0),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(4),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -237,7 +277,7 @@ class InsightsScreen extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: theme.colorScheme.outline,
             ),
           ),
@@ -246,7 +286,11 @@ class InsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFieldProgressRow(ThemeData theme, String field, double progress) {
+  Widget _buildFieldProgressRow(
+    ThemeData theme,
+    String field,
+    double progress,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -256,7 +300,7 @@ class InsightsScreen extends StatelessWidget {
             Text(
               field,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
               ),
             ),
             Text(
@@ -264,7 +308,7 @@ class InsightsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.outline,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -276,7 +320,9 @@ class InsightsScreen extends StatelessWidget {
             value: progress,
             minHeight: 6,
             backgroundColor: theme.colorScheme.outlineVariant.withOpacity(0.3),
-            valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              theme.colorScheme.secondary,
+            ),
           ),
         ),
       ],
@@ -330,7 +376,7 @@ class PercentileGaugePainter extends CustomPainter {
         style: const TextStyle(
           color: Colors.black,
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -338,7 +384,8 @@ class PercentileGaugePainter extends CustomPainter {
     textPainterScore.layout();
     textPainterScore.paint(
       canvas,
-      center - Offset(textPainterScore.width / 2, textPainterScore.height / 2 + 10),
+      center -
+          Offset(textPainterScore.width / 2, textPainterScore.height / 2 + 10),
     );
 
     // Draw Percentile Label
@@ -348,7 +395,7 @@ class PercentileGaugePainter extends CustomPainter {
         style: TextStyle(
           color: Colors.grey,
           fontSize: 9,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.5,
         ),
       ),

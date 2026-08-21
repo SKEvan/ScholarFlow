@@ -155,7 +155,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         title: Text(
           _isEditing ? 'Edit Note' : 'New Research Note',
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: const Color(0xFF0F172A),
             fontSize: 18,
           ),
@@ -201,7 +201,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                         'CATEGORY',
                         style: TextStyle(
                           color: Color(0xFF64748B),
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           fontSize: 11,
                           letterSpacing: 0.6,
                         ),
@@ -219,7 +219,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                                   category,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w500,
                                     color: isSelected
                                         ? Colors.white
                                         : const Color(0xFF64748B),
@@ -274,7 +274,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                               controller: _titleController,
                               style: const TextStyle(
                                 fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w500,
                                 color: Color(0xFF0F172A),
                               ),
                               decoration: const InputDecoration(

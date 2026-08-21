@@ -17,10 +17,7 @@ import '../services/backend_api.dart';
 ///     },
 ///   );
 class AgentScreen extends StatefulWidget {
-  const AgentScreen({
-    super.key,
-    required this.toolConfig,
-  });
+  const AgentScreen({super.key, required this.toolConfig});
 
   /// Tool definition: title, icon, endpoint, choices.
   final Map<String, dynamic> toolConfig;
@@ -53,10 +50,10 @@ class _AgentScreenState extends State<AgentScreen> {
 
   // Maps agent endpoint to the project column that stores the latest output.
   static const _endpointToOutputKey = {
-    '/agents/summary'           : 'summary',
-    '/agents/comparison'        : 'comparison',
-    '/agents/research-gap'      : 'research_gap',
-    '/agents/literature-review' : 'literature_review',
+    '/agents/summary': 'summary',
+    '/agents/comparison': 'comparison',
+    '/agents/research-gap': 'research_gap',
+    '/agents/literature-review': 'literature_review',
   };
 
   bool _argsParsed = false;
@@ -99,7 +96,8 @@ class _AgentScreenState extends State<AgentScreen> {
       final repo = await BackendApi.getProjectRepository(_projectId!);
       // The repository endpoint returns summary/comparison/research_gap/
       // literature_review at the top level (mirrored from project.latest_*).
-      final raw = repo[outputKey] ?? (repo['project'] as Map?)?['latest_$outputKey'];
+      final raw =
+          repo[outputKey] ?? (repo['project'] as Map?)?['latest_$outputKey'];
       if (!mounted) return;
       if (raw is Map<String, dynamic> && raw.isNotEmpty) {
         setState(() {
@@ -175,9 +173,9 @@ class _AgentScreenState extends State<AgentScreen> {
               _isStreaming = false;
               _streamDelta = '';
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Agent failed: $message')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Agent failed: $message')));
         }
       },
       onError: (Object error) {
@@ -187,9 +185,9 @@ class _AgentScreenState extends State<AgentScreen> {
           _isStreaming = false;
           _streamDelta = '';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Agent failed: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Agent failed: $error')));
       },
       onDone: () {
         if (!mounted) return;
@@ -223,9 +221,14 @@ class _AgentScreenState extends State<AgentScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final toolTitle = widget.toolConfig['title']?.toString() ?? 'AI Tool';
-    final toolIcon = widget.toolConfig['icon'] as IconData? ?? Icons.auto_awesome;
-    final choices = (widget.toolConfig['choices'] as List? ?? []).map((e) => e.toString()).toList();
-    final eligiblePapers = _papers.where((p) => (p['citations'] as num? ?? 0) > 0).toList();
+    final toolIcon =
+        widget.toolConfig['icon'] as IconData? ?? Icons.auto_awesome;
+    final choices = (widget.toolConfig['choices'] as List? ?? [])
+        .map((e) => e.toString())
+        .toList();
+    final eligiblePapers = _papers
+        .where((p) => (p['citations'] as num? ?? 0) > 0)
+        .toList();
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -243,14 +246,16 @@ class _AgentScreenState extends State<AgentScreen> {
             Text(
               toolTitle,
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
                 color: theme.colorScheme.primary,
               ),
             ),
             if (_projectTitle.isNotEmpty)
               Text(
                 _projectTitle,
-                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
           ],
         ),
@@ -269,17 +274,24 @@ class _AgentScreenState extends State<AgentScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                          color: theme.colorScheme.secondaryContainer
+                              .withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(toolIcon, color: theme.colorScheme.secondary, size: 28),
+                        child: Icon(
+                          toolIcon,
+                          color: theme.colorScheme.secondary,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -288,12 +300,16 @@ class _AgentScreenState extends State<AgentScreen> {
                           children: [
                             Text(
                               toolTitle,
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Select papers, choose an output type, and run.',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                              ),
                             ),
                           ],
                         ),
@@ -325,7 +341,9 @@ class _AgentScreenState extends State<AgentScreen> {
                     const SizedBox(width: 6),
                     Text(
                       '(${_selectedPaperIds.length} of ${eligiblePapers.length} selected)',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
                   ],
                 ),
@@ -334,13 +352,17 @@ class _AgentScreenState extends State<AgentScreen> {
                   constraints: const BoxConstraints(maxHeight: 260),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: eligiblePapers.isEmpty
                       ? const Padding(
                           padding: EdgeInsets.all(16),
-                          child: Text('No papers with citations in this project.'),
+                          child: Text(
+                            'No papers with citations in this project.',
+                          ),
                         )
                       : ListView.separated(
                           shrinkWrap: true,
@@ -365,7 +387,9 @@ class _AgentScreenState extends State<AgentScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              subtitle: Text('${paper['citations'] ?? 0} citations'),
+                              subtitle: Text(
+                                '${paper['citations'] ?? 0} citations',
+                              ),
                             );
                           },
                         ),
@@ -381,7 +405,9 @@ class _AgentScreenState extends State<AgentScreen> {
                   maxLines: 5,
                   decoration: InputDecoration(
                     hintText: 'Describe what you want the AI to focus on…',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
@@ -401,7 +427,10 @@ class _AgentScreenState extends State<AgentScreen> {
                             backgroundColor: theme.colorScheme.errorContainer,
                             foregroundColor: theme.colorScheme.onErrorContainer,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            textStyle: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
@@ -414,7 +443,10 @@ class _AgentScreenState extends State<AgentScreen> {
                     label: Text('Run $toolTitle'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -443,22 +475,24 @@ class _AgentScreenState extends State<AgentScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: theme.colorScheme.secondary.withOpacity(0.4),
-        ),
+        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: theme.colorScheme.secondary, size: 18),
+              Icon(
+                Icons.auto_awesome,
+                color: theme.colorScheme.secondary,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   '$toolTitle · streaming…',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                     color: theme.colorScheme.secondary,
                   ),
                 ),
@@ -468,7 +502,9 @@ class _AgentScreenState extends State<AgentScreen> {
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.secondary,
+                  ),
                 ),
               ),
             ],
@@ -504,17 +540,25 @@ class _AgentScreenState extends State<AgentScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondaryContainer.withOpacity(0.18),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.auto_awesome, color: theme.colorScheme.secondary, size: 18),
+                Icon(
+                  Icons.auto_awesome,
+                  color: theme.colorScheme.secondary,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    result != null ? 'Latest Output · $_resultChoice' : 'Latest Output',
+                    result != null
+                        ? 'Latest Output · $_resultChoice'
+                        : 'Latest Output',
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       color: theme.colorScheme.secondary,
                     ),
                   ),
@@ -525,7 +569,9 @@ class _AgentScreenState extends State<AgentScreen> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.secondary,
+                      ),
                     ),
                   ),
               ],
@@ -539,7 +585,9 @@ class _AgentScreenState extends State<AgentScreen> {
                 _isLoadingLatest
                     ? 'Loading latest output…'
                     : 'No output yet — run the agent above to generate.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
             )
           else
@@ -551,7 +599,10 @@ class _AgentScreenState extends State<AgentScreen> {
                   if (_resultPrompt.isNotEmpty)
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(8),
@@ -559,12 +610,18 @@ class _AgentScreenState extends State<AgentScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.person_outline, size: 14, color: theme.colorScheme.outline),
+                          Icon(
+                            Icons.person_outline,
+                            size: 14,
+                            color: theme.colorScheme.outline,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               _resultPrompt,
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                              ),
                             ),
                           ),
                         ],
@@ -589,38 +646,46 @@ class _AgentScreenState extends State<AgentScreen> {
           .split(' ')
           .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
           .join(' ');
-      widgets.add(Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-            ),
-            _buildJsonValue(theme, value),
-          ],
+              _buildJsonValue(theme, value),
+            ],
+          ),
         ),
-      ));
+      );
     });
     return widgets;
   }
 
   Widget _buildJsonValue(ThemeData theme, dynamic value) {
     if (value is String) {
-      return Text(value, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5));
+      return Text(
+        value,
+        style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+      );
     }
     if (value is List) {
       return Column(
@@ -634,7 +699,9 @@ class _AgentScreenState extends State<AgentScreen> {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -652,10 +719,16 @@ class _AgentScreenState extends State<AgentScreen> {
                   margin: const EdgeInsets.only(top: 7, right: 8),
                   width: 5,
                   height: 5,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.secondary),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.secondary,
+                  ),
                 ),
                 Expanded(
-                  child: Text(item.toString(), style: theme.textTheme.bodyMedium?.copyWith(height: 1.5)),
+                  child: Text(
+                    item.toString(),
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                  ),
                 ),
               ],
             ),
@@ -682,7 +755,9 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
     );
   }
 }

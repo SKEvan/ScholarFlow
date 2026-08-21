@@ -56,7 +56,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         title: Text(
           'Projects',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
             fontSize: 18,
           ),
@@ -94,7 +94,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 'Could not load projects',
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -125,7 +125,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           'No projects yet',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -177,7 +177,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                       title,
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.bold,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                     ),
                                   ),

@@ -20,10 +20,15 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
       'iconBg': AppTheme.warmAmberSoft,
       'tagline': '1-min skim',
       'isGenerating': false,
-      'preview': 'Hybrid quantum-classical architectures reduce training overhead by 40% while improving predictive accuracy on high-frequency streams. Latency drops 18%; plateau observed past 32 qubits.',
+      'preview':
+          'Hybrid quantum-classical architectures reduce training overhead by 40% while improving predictive accuracy on high-frequency streams. Latency drops 18%; plateau observed past 32 qubits.',
       'meta1': '2 min read',
       'meta2': 'Everyday tone',
-      'bullets': ['Headline result in one line', 'Why it matters for non-specialists', 'What to do next with this paper'],
+      'bullets': [
+        'Headline result in one line',
+        'Why it matters for non-specialists',
+        'What to do next with this paper',
+      ],
     },
     {
       'title': 'Technical',
@@ -33,10 +38,15 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
       'iconBg': AppTheme.friendlyPurpleSoft,
       'tagline': 'Reproducibility-first',
       'isGenerating': true,
-      'preview': 'We adopt a QV-CNN with depth-3 variational ansatz, AdamW (lr=3e-4), cosine annealing, and report benchmarks on NASDAQ HFT, weather radar, and genomic streams.',
+      'preview':
+          'We adopt a QV-CNN with depth-3 variational ansatz, AdamW (lr=3e-4), cosine annealing, and report benchmarks on NASDAQ HFT, weather radar, and genomic streams.',
       'meta1': '12 min read',
       'meta2': 'Reproducible',
-      'bullets': ['Proves a 2x acceleration bound for QV-CNN', 'Establishes convergence under mild Lipschitz assumptions', 'Open challenge on decoherence-aware loss landscapes'],
+      'bullets': [
+        'Proves a 2x acceleration bound for QV-CNN',
+        'Establishes convergence under mild Lipschitz assumptions',
+        'Open challenge on decoherence-aware loss landscapes',
+      ],
     },
     {
       'title': 'Layman',
@@ -46,10 +56,15 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
       'iconBg': AppTheme.accentBlueSoft,
       'tagline': 'Plain English',
       'isGenerating': false,
-      'preview': 'Think of a self-driving car that learns from many tiny microphones at once. This paper shows how to do the same trick with quantum chips, using less power and learning faster.',
+      'preview':
+          'Think of a self-driving car that learns from many tiny microphones at once. This paper shows how to do the same trick with quantum chips, using less power and learning faster.',
       'meta1': '4 min read',
       'meta2': 'Story format',
-      'bullets': ['A car-analogy that you can repeat at dinner', 'A short timeline of how this technology came about', 'One concrete way you could use it tomorrow'],
+      'bullets': [
+        'A car-analogy that you can repeat at dinner',
+        'A short timeline of how this technology came about',
+        'One concrete way you could use it tomorrow',
+      ],
     },
   ];
 
@@ -62,8 +77,17 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
         backgroundColor: AppTheme.primaryNavy,
         duration: const Duration(milliseconds: 1400),
         margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 90.h),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-        content: Text('Showing ${_versions[id]['title']} version', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.white)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        content: Text(
+          'Showing ${_versions[id]['title']} version',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
@@ -77,22 +101,84 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
         backgroundColor: AppTheme.warmSurface,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        leading: IconButton(icon: Icon(Icons.arrow_back_rounded, color: theme.colorScheme.onSurface), onPressed: () => Navigator.of(context).pop()),
-        title: Text('ScholarFlow', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: AppTheme.primaryNavy)),
-        actions: [IconButton(icon: Icon(Icons.tune_rounded, color: theme.colorScheme.onSurface.withOpacity(0.55)), onPressed: () {})],
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: theme.colorScheme.onSurface,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'ScholarFlow',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.primaryNavy,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.tune_rounded,
+              color: theme.colorScheme.onSurface.withOpacity(0.55),
+            ),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 130.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h), decoration: BoxDecoration(color: AppTheme.warmAmberSoft, borderRadius: BorderRadius.circular(999.r), border: Border.all(color: AppTheme.warmAmberBorder)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.summarize_rounded, size: 14.sp, color: AppTheme.warmAmber), SizedBox(width: 5.w), Text('SUMMARY', style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800, color: AppTheme.primaryNavy))])),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                color: AppTheme.warmAmberSoft,
+                borderRadius: BorderRadius.circular(999.r),
+                border: Border.all(color: AppTheme.warmAmberBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.summarize_rounded,
+                    size: 14.sp,
+                    color: AppTheme.warmAmber,
+                  ),
+                  SizedBox(width: 5.w),
+                  Text(
+                    'SUMMARY',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primaryNavy,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SizedBox(height: 10.h),
-            Text('Three takes, one paper', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: AppTheme.primaryNavy)),
+            Text(
+              'Three takes, one paper',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppTheme.primaryNavy,
+              ),
+            ),
             SizedBox(height: 4.h),
-            Text('Pick the depth that fits your moment — from a 60-second skim to a reproducible walk-through.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7), height: 1.4)),
+            Text(
+              'Pick the depth that fits your moment — from a 60-second skim to a reproducible walk-through.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                height: 1.4,
+              ),
+            ),
             SizedBox(height: 18.h),
-            for (int i = 0; i < _versions.length; i++) Padding(padding: EdgeInsets.only(bottom: 12.h), child: _buildVersionCard(theme, _versions[i], i)),
+            for (int i = 0; i < _versions.length; i++)
+              Padding(
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: _buildVersionCard(theme, _versions[i], i),
+              ),
           ],
         ),
       ),
@@ -113,8 +199,17 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: selected ? AppTheme.actionBlue : AppTheme.warmAmberBorder, width: selected ? 2.w : 1.w),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(selected ? 0.10 : 0.04), blurRadius: selected ? 14 : 8, offset: Offset(0, 4.h))],
+            border: Border.all(
+              color: selected ? AppTheme.actionBlue : AppTheme.warmAmberBorder,
+              width: selected ? 2.w : 1.w,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(selected ? 0.10 : 0.04),
+                blurRadius: selected ? 14 : 8,
+                offset: Offset(0, 4.h),
+              ),
+            ],
           ),
           padding: EdgeInsets.all(14.w),
           child: Column(
@@ -122,36 +217,122 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
             children: [
               Row(
                 children: [
-                  Container(width: 42.w, height: 42.h, decoration: BoxDecoration(color: v['iconBg'], borderRadius: BorderRadius.circular(12.r)), child: Icon(v['icon'], color: v['iconColor'], size: 22.sp)),
+                  Container(
+                    width: 42.w,
+                    height: 42.h,
+                    decoration: BoxDecoration(
+                      color: v['iconBg'],
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(v['icon'], color: v['iconColor'], size: 22.sp),
+                  ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(v['title'], style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: AppTheme.primaryNavy)),
+                        Text(
+                          v['title'],
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primaryNavy,
+                          ),
+                        ),
                         SizedBox(height: 2.h),
-                        Text(v['subtitle'], style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                        Text(
+                          v['subtitle'],
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, key: ValueKey(selected), color: selected ? AppTheme.actionBlue : theme.colorScheme.onSurface.withOpacity(0.25), size: 24.sp),
+                    child: Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      key: ValueKey(selected),
+                      color: selected
+                          ? AppTheme.actionBlue
+                          : theme.colorScheme.onSurface.withOpacity(0.25),
+                      size: 24.sp,
+                    ),
                   ),
                 ],
               ),
               SizedBox(height: 10.h),
               Row(
                 children: [
-                  Container(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h), decoration: BoxDecoration(color: AppTheme.warmAmberSoft, borderRadius: BorderRadius.circular(999.r), border: Border.all(color: AppTheme.warmAmberBorder)), child: Text(v['tagline'], style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: AppTheme.primaryNavy))),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warmAmberSoft,
+                      borderRadius: BorderRadius.circular(999.r),
+                      border: Border.all(color: AppTheme.warmAmberBorder),
+                    ),
+                    child: Text(
+                      v['tagline'],
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primaryNavy,
+                      ),
+                    ),
+                  ),
                   SizedBox(width: 6.w),
-                  Text('· ${v['meta1']} · ${v['meta2']}', style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withOpacity(0.55))),
+                  Text(
+                    '· ${v['meta1']} · ${v['meta2']}',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurface.withOpacity(0.55),
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 12.h),
-              if (generating) _buildShimmerBlock(theme) else Text(v['preview'], style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.primaryNavy.withOpacity(0.85), height: 1.5)),
+              if (generating)
+                _buildShimmerBlock(theme)
+              else
+                Text(
+                  v['preview'],
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.primaryNavy.withOpacity(0.85),
+                    height: 1.5,
+                  ),
+                ),
               SizedBox(height: 12.h),
-              ...v['bullets'].map<Widget>((b) => Padding(padding: EdgeInsets.only(bottom: 6.h), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.subdirectory_arrow_right_rounded, size: 16.sp, color: v['iconColor']), SizedBox(width: 8.w), Expanded(child: Text(b, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.primaryNavy.withOpacity(0.8), height: 1.4)))]))),
+              ...v['bullets'].map<Widget>(
+                (b) => Padding(
+                  padding: EdgeInsets.only(bottom: 6.h),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.subdirectory_arrow_right_rounded,
+                        size: 16.sp,
+                        color: v['iconColor'],
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          b,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.primaryNavy.withOpacity(0.8),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -163,11 +344,28 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          Container(width: 14.w, height: 14.h, decoration: BoxDecoration(color: AppTheme.warmAmber, shape: BoxShape.circle)),
-          SizedBox(width: 8.w),
-          Text('GENERATING', style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w800, color: AppTheme.warmAmber, letterSpacing: 1.2)),
-        ]),
+        Row(
+          children: [
+            Container(
+              width: 14.w,
+              height: 14.h,
+              decoration: BoxDecoration(
+                color: AppTheme.warmAmber,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              'GENERATING',
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.warmAmber,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 10.h),
         _shimmerBar(width: double.infinity, height: 12.h),
         SizedBox(height: 8.h),
@@ -183,16 +381,32 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment(-1, 0), end: Alignment(1, 0), colors: [AppTheme.warmAmberSoft, AppTheme.friendlyPurpleSoft, AppTheme.warmAmberSoft], stops: const [0.0, 0.5, 1.0]),
+        gradient: LinearGradient(
+          begin: Alignment(-1, 0),
+          end: Alignment(1, 0),
+          colors: [
+            AppTheme.warmAmberSoft,
+            AppTheme.friendlyPurpleSoft,
+            AppTheme.warmAmberSoft,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
         borderRadius: BorderRadius.circular(6.r),
       ),
     );
   }
+
   Widget _buildBottomNav(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -201,8 +415,20 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _navItem(theme, Icons.dashboard_rounded, 'Home', false, () => Navigator.of(context).pushReplacementNamed('/dashboard')),
-              _navItem(theme, Icons.folder_open_rounded, 'Projects', false, () => Navigator.of(context).pushReplacementNamed('/projects')),
+              _navItem(
+                theme,
+                Icons.dashboard_rounded,
+                'Home',
+                false,
+                () => Navigator.of(context).pushReplacementNamed('/dashboard'),
+              ),
+              _navItem(
+                theme,
+                Icons.folder_open_rounded,
+                'Projects',
+                false,
+                () => Navigator.of(context).pushReplacementNamed('/projects'),
+              ),
             ],
           ),
         ),
@@ -210,7 +436,13 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
     );
   }
 
-  Widget _navItem(ThemeData theme, IconData icon, String label, bool isActive, VoidCallback? onTap) {
+  Widget _navItem(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    bool isActive,
+    VoidCallback? onTap,
+  ) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -226,7 +458,13 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
                   color: isActive ? AppTheme.actionBlue : Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Icon(icon, size: 16.sp, color: isActive ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.55)),
+                child: Icon(
+                  icon,
+                  size: 16.sp,
+                  color: isActive
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withOpacity(0.55),
+                ),
               ),
               SizedBox(height: 3.h),
               Text(
@@ -237,7 +475,9 @@ class _SummarizerReviewScreenState extends State<SummarizerReviewScreen> {
                 style: TextStyle(
                   fontSize: 10.sp,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? AppTheme.actionBlue : theme.colorScheme.onSurface.withOpacity(0.55),
+                  color: isActive
+                      ? AppTheme.actionBlue
+                      : theme.colorScheme.onSurface.withOpacity(0.55),
                 ),
               ),
             ],

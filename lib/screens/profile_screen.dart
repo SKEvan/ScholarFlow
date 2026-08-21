@@ -27,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           'Researcher Profile',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
           ),
         ),
@@ -114,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         'Dr. Julian Vance',
                         style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -172,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         'VIEW ALL',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           fontSize: 11,
                         ),
                       ),
@@ -244,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               value,
               style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
                 color: theme.colorScheme.secondary,
               ),
             ),
@@ -259,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title,
       style: theme.textTheme.labelLarge?.copyWith(
         color: theme.colorScheme.outline,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
       ),
     );
@@ -297,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         fontSize: 16,
                       ),
                     ),

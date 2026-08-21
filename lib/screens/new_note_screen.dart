@@ -61,7 +61,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
         title: Text(
           'New Note',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
           ),
         ),
@@ -88,7 +88,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                       'SELECT CATEGORY',
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.outline,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         fontSize: 11,
                       ),
                     ),
@@ -105,7 +105,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                                 category,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w500,
                                   color: isSelected
                                       ? theme.colorScheme.onSecondary
                                       : theme.colorScheme.outline,
@@ -138,7 +138,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                     TextField(
                       controller: _titleController,
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: theme.colorScheme.primary,
                       ),
                       decoration: InputDecoration(
@@ -162,7 +162,9 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                          color: theme.colorScheme.outlineVariant.withOpacity(
+                            0.5,
+                          ),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -180,40 +182,72 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                           Row(
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.format_bold_outlined, size: 20),
+                                icon: const Icon(
+                                  Icons.format_bold_outlined,
+                                  size: 20,
+                                ),
                                 onPressed: () {},
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.format_italic_outlined, size: 20),
+                                icon: const Icon(
+                                  Icons.format_italic_outlined,
+                                  size: 20,
+                                ),
                                 onPressed: () {},
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.format_list_bulleted_outlined, size: 20),
+                                icon: const Icon(
+                                  Icons.format_list_bulleted_outlined,
+                                  size: 20,
+                                ),
                                 onPressed: () {},
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.format_quote_outlined, size: 20),
+                                icon: const Icon(
+                                  Icons.format_quote_outlined,
+                                  size: 20,
+                                ),
                                 onPressed: () {},
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                               ),
                               Container(
                                 height: 16,
                                 width: 1,
                                 color: theme.colorScheme.outlineVariant,
-                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.functions_outlined, size: 20),
+                                icon: const Icon(
+                                  Icons.functions_outlined,
+                                  size: 20,
+                                ),
                                 onPressed: () {},
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                               ),
                             ],
                           ),
@@ -225,9 +259,12 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                             keyboardType: TextInputType.multiline,
                             style: theme.textTheme.bodyMedium,
                             decoration: InputDecoration(
-                              hintText: 'Start documenting your research findings...',
+                              hintText:
+                                  'Start documenting your research findings...',
                               hintStyle: TextStyle(
-                                color: theme.colorScheme.outline.withOpacity(0.5),
+                                color: theme.colorScheme.outline.withOpacity(
+                                  0.5,
+                                ),
                               ),
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
@@ -248,14 +285,25 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {},
-                            icon: Icon(Icons.attach_file, size: 18, color: theme.colorScheme.secondary),
-                            label: const Text('ATTACH FILE', style: TextStyle(fontSize: 11)),
+                            icon: Icon(
+                              Icons.attach_file,
+                              size: 18,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            label: const Text(
+                              'ATTACH FILE',
+                              style: TextStyle(fontSize: 11),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: theme.colorScheme.outlineVariant),
+                              side: BorderSide(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 14.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14.0,
+                              ),
                             ),
                           ),
                         ),
@@ -263,14 +311,25 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {},
-                            icon: Icon(Icons.label_outline, size: 18, color: theme.colorScheme.secondary),
-                            label: const Text('TAG PROJECT', style: TextStyle(fontSize: 11)),
+                            icon: Icon(
+                              Icons.label_outline,
+                              size: 18,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            label: const Text(
+                              'TAG PROJECT',
+                              style: TextStyle(fontSize: 11),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: theme.colorScheme.outlineVariant),
+                              side: BorderSide(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 14.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14.0,
+                              ),
                             ),
                           ),
                         ),
@@ -281,10 +340,13 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                     // AI Assistant Card
                     Container(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondaryContainer.withOpacity(0.08),
+                        color: theme.colorScheme.secondaryContainer.withOpacity(
+                          0.08,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                          color: theme.colorScheme.secondaryContainer
+                              .withOpacity(0.2),
                         ),
                       ),
                       padding: const EdgeInsets.all(16),
@@ -305,7 +367,7 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                                   'AI ASSISTANT',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: theme.colorScheme.secondary,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w500,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -313,7 +375,8 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                                 Text(
                                   "Mention '@research' to automatically cite relevant papers from your library.",
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
                                   ),
                                 ),
                               ],
@@ -347,7 +410,9 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(width: 12),
@@ -355,22 +420,26 @@ class _NewNoteScreenState extends State<NewNoteScreen> {
                           ],
                         )
                       : _isSaved
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check_circle, size: 20, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text('Saved'),
-                              ],
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.save, size: 20),
-                                SizedBox(width: 8),
-                                Text('Save Note'),
-                              ],
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 20,
+                              color: Colors.green,
                             ),
+                            SizedBox(width: 8),
+                            Text('Saved'),
+                          ],
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.save, size: 20),
+                            SizedBox(width: 8),
+                            Text('Save Note'),
+                          ],
+                        ),
                 ),
               ),
             ),

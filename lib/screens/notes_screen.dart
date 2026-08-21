@@ -102,7 +102,8 @@ class _NotesScreenState extends State<NotesScreen> {
     final filteredNotes = allNotes.where((note) {
       final matchesCategory =
           _selectedCategory == 'ALL' || note.category == _selectedCategory;
-      final matchesQuery = _searchQuery.isEmpty ||
+      final matchesQuery =
+          _searchQuery.isEmpty ||
           note.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           note.content.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesQuery;
@@ -139,7 +140,7 @@ class _NotesScreenState extends State<NotesScreen> {
                           Text(
                             'Research Notes',
                             style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                               color: const Color(0xFF0F172A),
                               fontSize: 18,
                             ),
@@ -248,7 +249,7 @@ class _NotesScreenState extends State<NotesScreen> {
                                   cat,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w500,
                                     color: isSelected
                                         ? Colors.white
                                         : const Color(0xFF64748B),
@@ -299,9 +300,7 @@ class _NotesScreenState extends State<NotesScreen> {
           ),
 
           // Floating Glassmorphism Navigation Bar
-          const Positioned.fill(
-            child: FloatingNavBar(currentRoute: '/notes'),
-          ),
+          const Positioned.fill(child: FloatingNavBar(currentRoute: '/notes')),
         ],
       ),
     );
@@ -361,7 +360,7 @@ class _NotesScreenState extends State<NotesScreen> {
                       note.title,
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: Color(0xFF0F172A),
                       ),
                     ),
@@ -380,7 +379,7 @@ class _NotesScreenState extends State<NotesScreen> {
                       note.category,
                       style: TextStyle(
                         color: categoryTextColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         fontSize: 10,
                       ),
                     ),
@@ -466,11 +465,7 @@ class _NotesScreenState extends State<NotesScreen> {
               color: brandColor.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.note_alt_outlined,
-              size: 48,
-              color: brandColor,
-            ),
+            child: Icon(Icons.note_alt_outlined, size: 48, color: brandColor),
           ),
         ),
         const SizedBox(height: 16),
@@ -478,7 +473,7 @@ class _NotesScreenState extends State<NotesScreen> {
           'No Notes Found',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             fontSize: 16,
             color: Color(0xFF0F172A),
           ),
@@ -526,9 +521,9 @@ class _NotesScreenState extends State<NotesScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               _storageService.deleteNote(note.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Note deleted')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Note deleted')));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),

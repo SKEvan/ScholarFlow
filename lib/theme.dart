@@ -11,7 +11,7 @@ class AppTheme {
   static const Color surfaceContainerLow = Color(0xFFF2F4F6);
   static const Color outlineGray = Color(0xFF76777D);
   static const Color outlineVariant = Color(0xFFC6C6CD);
-  
+
   static const Color secondaryContainer = Color(0xFF2170E4);
   static const Color onSecondaryContainer = Color(0xFFFEFCFF);
 
@@ -26,15 +26,17 @@ class AppTheme {
   static const Color warmSurface = Color(0xFFFAF9F7); // page background
   static const Color warmAmberSoft = Color(0xFFFFF8EE); // finalized banner bg
   static const Color warmAmberBorder = Color(0xFFF3E4C7);
-  static const Color warmAmber = Color(0xFFF59E0B); // accent for read-only / final state
+  static const Color warmAmber = Color(
+    0xFFF59E0B,
+  ); // accent for read-only / final state
   static const Color friendlyPurple = Color(0xFF7C3AED);
   static const Color friendlyPurpleSoft = Color(0xFFF3EEFF);
   static const Color successGreen = Color(0xFF059669);
   static const Color successGreenSoft = Color(0xFFD1FAE5);
-  
+
   static ThemeData get lightTheme {
     final base = ThemeData.light();
-    
+
     return base.copyWith(
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
@@ -52,49 +54,49 @@ class AppTheme {
         onSecondaryContainer: onSecondaryContainer,
       ),
       scaffoldBackgroundColor: backgroundLight,
-      
+
       // Typography
-      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
-        displayLarge: GoogleFonts.inter(
+      textTheme: GoogleFonts.fredokaTextTheme(base.textTheme).copyWith(
+        displayLarge: GoogleFonts.fredoka(
           fontSize: 32.0,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.02,
           color: primaryNavy,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: GoogleFonts.fredoka(
           fontSize: 24.0,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: -0.01,
           color: primaryNavy,
         ),
-        headlineSmall: GoogleFonts.inter(
+        headlineSmall: GoogleFonts.fredoka(
           fontSize: 20.0,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: primaryNavy,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.fredoka(
           fontSize: 18.0,
           fontWeight: FontWeight.normal,
           color: const Color(0xFF191C1E),
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: GoogleFonts.fredoka(
           fontSize: 16.0,
           fontWeight: FontWeight.normal,
           color: const Color(0xFF191C1E),
         ),
-        bodySmall: GoogleFonts.inter(
+        bodySmall: GoogleFonts.fredoka(
           fontSize: 14.0,
           fontWeight: FontWeight.normal,
           color: const Color(0xFF45464D),
         ),
-        labelLarge: GoogleFonts.inter(
+        labelLarge: GoogleFonts.fredoka(
           fontSize: 12.0,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.05,
           color: const Color(0xFF45464D),
         ),
       ),
-      
+
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -103,31 +105,34 @@ class AppTheme {
           elevation: 0,
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.fredoka(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
-      
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: actionBlue,
           side: const BorderSide(color: actionBlue, width: 1.5),
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.fredoka(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
-      
+
       // Input Fields
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceLowest,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16.0),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14.0,
+          horizontal: 16.0,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: const BorderSide(color: outlineVariant, width: 1.0),
@@ -146,12 +151,12 @@ class AppTheme {
         ),
         prefixIconColor: outlineGray,
         suffixIconColor: outlineGray,
-        hintStyle: GoogleFonts.inter(
+        hintStyle: GoogleFonts.fredoka(
           color: outlineGray.withOpacity(0.6),
           fontSize: 15,
         ),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         color: surfaceLowest,

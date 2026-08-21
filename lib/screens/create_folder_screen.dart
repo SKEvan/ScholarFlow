@@ -40,7 +40,9 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
   }
 
   Future<void> _pickDate({required bool isStartDate}) async {
-    final initialDate = isStartDate ? _startDate ?? DateTime.now() : _deadline ?? DateTime.now();
+    final initialDate = isStartDate
+        ? _startDate ?? DateTime.now()
+        : _deadline ?? DateTime.now();
     final selected = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -183,7 +185,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
         title: Text(
           'New Project',
           style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: theme.colorScheme.primary,
             fontSize: 18,
           ),
@@ -202,7 +204,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.outline,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -224,7 +226,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.outline,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -248,7 +250,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.outline,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -259,7 +261,9 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                         .map(
                           (status) => DropdownMenuItem<String>(
                             value: status,
-                            child: Text(status[0].toUpperCase() + status.substring(1)),
+                            child: Text(
+                              status[0].toUpperCase() + status.substring(1),
+                            ),
                           ),
                         )
                         .toList(),
@@ -284,20 +288,28 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
                     ),
                     child: Column(
                       children: [
                         ListTile(
                           title: const Text('START DATE'),
-                          subtitle: Text(_formatDate(_startDate) ?? 'Pick a start date'),
+                          subtitle: Text(
+                            _formatDate(_startDate) ?? 'Pick a start date',
+                          ),
                           trailing: const Icon(Icons.date_range),
                           onTap: () => _pickDate(isStartDate: true),
                         ),
                         const Divider(height: 1),
                         ListTile(
                           title: const Text('DEADLINE'),
-                          subtitle: Text(_formatDate(_deadline) ?? 'Pick a deadline'),
+                          subtitle: Text(
+                            _formatDate(_deadline) ?? 'Pick a deadline',
+                          ),
                           trailing: const Icon(Icons.date_range),
                           onTap: () => _pickDate(isStartDate: false),
                         ),
@@ -313,7 +325,7 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.outline,
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -330,7 +342,11 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
                       ),
                       child: const Text('No collaborators added yet.'),
                     )
@@ -358,12 +374,17 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                       backgroundColor: theme.colorScheme.secondary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                     icon: const Icon(Icons.add_circle, size: 20),
                     label: const Text(
                       'Create Project',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -393,12 +414,14 @@ class _CreateFolderScreenState extends State<CreateFolderScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.secondary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.secondary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         _creatingStageText,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),

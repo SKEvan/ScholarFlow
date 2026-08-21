@@ -61,7 +61,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Text(
                   'Link Sent!',
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -132,14 +132,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 child: Column(
                   children: [
-                    
                     const SizedBox(height: 28),
                     Text(
                       'Forgot Password?',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.displayLarge?.copyWith(
                         fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                     ),
@@ -176,7 +175,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 'EMAIL ADDRESS',
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.outline,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w500,
                                   fontSize: 11,
                                 ),
                               ),
@@ -254,7 +253,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       label: const Text('Back to Sign In'),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white,
-                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
                     const SizedBox(height: 24),

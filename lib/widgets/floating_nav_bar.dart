@@ -19,8 +19,8 @@ class FloatingNavBar extends StatelessWidget {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        width: 340,
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        width: double.infinity,
         height:
             barHeight +
             14, // Extra height for the elevated central floating button
@@ -169,7 +169,7 @@ class _NotchedBarPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final cx = w / 2;
-    final r = h / 2; // rounded ends
+    final r = 16.0; // rounded ends
 
     final path = Path();
     path.moveTo(r, 0);
@@ -234,7 +234,7 @@ class _NavIconItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         child: Column(
@@ -251,7 +251,7 @@ class _NavIconItem extends StatelessWidget {
                     color: isSelected
                         ? activeColor.withValues(alpha: 0.12)
                         : Colors.transparent,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),

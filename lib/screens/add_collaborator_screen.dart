@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../services/backend_api.dart';
 
 class AddCollaboratorScreen extends StatefulWidget {
-  const AddCollaboratorScreen({super.key});
+  const AddCollaboratorScreen({
+    super.key,
+    required this.projectId,
+    required this.invitedBy,
+  });
+
+  /// UUID of the project the new invitation belongs to.
+  final String projectId;
+
+  /// UUID of the user sending the invitation (current session user).
+  final String invitedBy;
 
   @override
   State<AddCollaboratorScreen> createState() => _AddCollaboratorScreenState();
@@ -14,56 +27,157 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
   bool _isProcessing = false;
   bool _isSent = false;
 
-  final List<Map<String, String>> _recentCollaborators = [
-    {
-      'name': 'Dr. Aris',
-      'url':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuC7shefmkSeKzrjdVdVTQ5DaLtca3cEjXKaQgVTx1m6H7iJhnSRFN_-tz3cfGMN3AZn_Sgf-s1lRFG_YypEAz7i-RF0DiemIqsLSpkDq76o3haf3cYltP0cKrat_RTySQb3y0hCEORq9s0Ae4-fsF6SODn-pINtjsBxZp-SU2YL6Y2XeKB6eZ0bispyblN9Yb9E1MhgjjHw9pN_VrMsqJKZZrZd1esc658MpmCvLiET6r94j0wW7mUbkNqPW79SDIQw0TUhihfMgk8',
-    },
-    {
-      'name': 'Prof. Miller',
-      'url':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDZ7PlM8MwNr8HArysnj5L0m3w5yD6JCDFu0nTrUZs0P40hIpssKZbQmRP5CJvp2lraHlFmNTSPGaW6_ZldmJhSz3fejb1ALzMw6AHU5LfhheMBe-kHbIs5tWw8ZOFTHhxXfRBYFA0YjpkSmskynl4Im2IOgjPgFVshLGYljrGH63SWHEP9Pg_TO-yBpfanvER2L5iqCo0nW9ILFnVTYi2sZR1aRcndPGAdDEyxNBZo7bSNWNMyV5IMr2AGjdhr_FxqkpsFGDz_PJ8',
-    },
-    {
-      'name': 'S. Zhang',
-      'url':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAsxjZBK9b0zyYwmNk4LNzFtRfeE08FTPfuFD3Ktcw2IoRK3RrGh42tkcxv-xYLz_9k7ww0w85SNYuAhsB51gjpObTC9T3iixoiJLIgsj6ZSBp2nHNA2-7puKm1-t1bKwXG4F1NVk-uGoqUryPptYXs8GP-wbpF5Tx3ewzcpPEmn1gUYEKcByQhCkayydu4I6r66nesy0vMzUCpUMXYA6pYPTYlP7TNNx71j_phI_uXkykhN7Dl24Lubq6wnXPVWAxgu1ZfhFfzyr4',
-    },
-    {
-      'name': 'L. Gomez',
-      'url':
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAkn_Uzh8YaPdbAGh_zoJLhaAeXM4JWGn4cVS-s0ErNguHHU_9OpjNR_gbyCLI0ft0XDerO6uOpKxnKu8AVEsm1p2UnbpO64HjvDlGzzywocZqSV0cTPP-Cb1L3hapWodpGkbT7g0NiGrCNuwk2h_Tbx2g91PMNm_aMFghMp5RJLJHacIkaP35GmjSvixqfVXRtaWnQZYp7Q8h6y7TnVibcMudfyQirmYy4xJPRLwFgkkKVpnLHRcdgTlb48fQIBkt106oyNnZ82fA',
-    },
-  ];
-
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
   }
 
-  void _sendInvitation() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isProcessing = true;
-      });
-
-      // Simulate sending invitation
-      Future.delayed(const Duration(seconds: 1500 ~/ 1000), () {
-        if (!mounted) return;
-        setState(() {
-          _isProcessing = false;
-          _isSent = true;
-        });
-
-        // Show success animation and then pop screen
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          Navigator.of(context).pop();
-        });
-      });
+  Future<void> _sendInvitation() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final invitation = await BackendApi.createProjectInvitation(
+        projectId: widget.projectId,
+        email: _emailController.text.trim(),
+        role: _permissionLevel,
+        invitedBy: widget.invitedBy,
+        actorUserId: widget.invitedBy,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isProcessing = false;
+        _isSent = true;
+      });
+      await _showInviteLinkSheet(invitation);
+      if (!mounted) {
+        return;
+      }
+      // Return the row so callers can refresh their lists.
+      Navigator.of(context).pop(invitation);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isProcessing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not send invite: $error')),
+      );
+    }
+  }
+
+  /// Local-dev helper: shows the invite token + a copy button so the
+  /// sender can hand the link to the invitee manually. Replace with
+  /// transactional email when SMTP is wired up.
+  Future<void> _showInviteLinkSheet(Map<String, dynamic> invitation) async {
+    final theme = Theme.of(context);
+    final token = invitation['token']?.toString() ?? '';
+    final email = invitation['email']?.toString() ??
+        _emailController.text.trim();
+    final role = invitation['role']?.toString() ?? _permissionLevel;
+    final link =
+        'https://scholarflow.app/invitations/$token'; // placeholder URL
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.mark_email_read_outlined,
+                        color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Invitation ready',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Share this link with $email so they can accept the '
+                  '$role invitation. (Email delivery is not configured yet.)',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    link,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(fontFamily: 'monospace'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: link),
+                          );
+                          if (!sheetContext.mounted) return;
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(content: Text('Link copied')),
+                          );
+                        },
+                        icon: const Icon(Icons.copy, size: 18),
+                        label: const Text('Copy link'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () =>
+                            Navigator.of(sheetContext).pop(),
+                        child: const Text('Done'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -214,87 +328,6 @@ class _AddCollaboratorScreenState extends State<AddCollaboratorScreen> {
                         },
                       ),
                       const SizedBox(height: 28),
-
-                      // Recent Collaborators Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'RECENT COLLABORATORS',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.outline,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 11,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {},
-                            child: Text(
-                              'VIEW ALL',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.secondary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Horizontal Row of User Avatars
-                      SizedBox(
-                        height: 90,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _recentCollaborators.length,
-                          itemBuilder: (context, index) {
-                            final collab = _recentCollaborators[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 20.0),
-                              child: Column(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: theme
-                                        .colorScheme
-                                        .outlineVariant
-                                        .withOpacity(0.3),
-                                    backgroundImage: NetworkImage(
-                                      collab['url']!,
-                                    ),
-                                    child: ClipOval(
-                                      child: Image.network(
-                                        collab['url']!,
-                                        fit: BoxFit.cover,
-                                        width: 52,
-                                        height: 52,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.person,
-                                                color:
-                                                    theme.colorScheme.primary,
-                                              );
-                                            },
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    collab['name']!,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 20),
 
                       // AI Insight Card
                       Container(

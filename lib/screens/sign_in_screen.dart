@@ -48,7 +48,10 @@ class _SignInScreenState extends State<SignInScreen> {
         password: _passwordController.text,
       );
       final userId = (result['user'] as Map?)?['id'] as String?;
-      await UserSession.setUserId(userId);
+      await UserSession.setIdentity(
+        userId: userId,
+        email: _emailController.text.trim(),
+      );
       if (!mounted) {
         return;
       }

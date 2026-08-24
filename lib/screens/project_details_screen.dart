@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/backend_api.dart';
+import '../services/user_session.dart';
+import 'project_members_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   const ProjectDetailsScreen({super.key});
@@ -51,6 +53,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   String? _projectId; // UUID → String? (was int?)
   String _projectTitle = 'Project';
+  String _projectDescription = '';
+  String? _ownerId; // UUID of the project owner (null until first load)
   bool _isLoading = false;
   bool _isSavingVersion = false;
 
@@ -58,6 +62,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   List<Map<String, dynamic>> _versions = [];
   Set<String> _selectedPaperIds = <String>{};
   final Set<String> _expandedPaperIds = <String>{};
+  // Whether the Research Papers section is expanded. Defaults to collapsed so
+  // the project details page stays scannable — users tap the bar to view
+  // the full list of papers.
+  bool _papersSectionExpanded = false;
+  int _membersCount = 0;
 
   @override
   void dispose() {
@@ -112,6 +121,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         if (project != null && project['title'] != null) {
           _projectTitle = project['title'].toString();
         }
+        if (project != null && project['owner_id'] != null) {
+          _ownerId = project['owner_id'].toString();
+        }
+        if (project != null && project['description'] != null) {
+          _projectDescription = project['description'].toString();
+        }
         _projectPapers = papers;
         _versions = versions;
         // UUID strings — no int.parse needed
@@ -121,6 +136,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             .toSet();
         _isLoading = false;
       });
+
+      // Best-effort member count for the tile. Never blocks the main load.
+      // ignore: unawaited_futures
+      _loadMembersCount();
     } catch (error) {
       if (!mounted) {
         return;
@@ -132,6 +151,111 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not load repository: $error')),
+      );
+    }
+  }
+
+  /// Fetches only the count of project members for the dashboard tile.
+  /// Failures are silent so they don't interfere with repository loading.
+  Future<void> _loadMembersCount() async {
+    if (_projectId == null) {
+      return;
+    }
+    try {
+      final members = await BackendApi.listProjectMembers(_projectId!);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _membersCount = members.length;
+      });
+    } catch (_) {
+      // Silent failure — the tile will simply show "Members" without a count.
+    }
+  }
+
+  void _openMembersScreen() {
+    if (_projectId == null) {
+      return;
+    }
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => ProjectMembersScreen(
+              projectId: _projectId!,
+              currentUserId: UserSession.userId ?? '',
+              ownerId: _ownerId ?? '',
+            ),
+          ),
+        )
+        .then((_) {
+          // Refresh the count after returning from the members screen so the
+          // tile badge reflects any additions/removals.
+          if (!mounted) {
+            return;
+          }
+          _loadMembersCount();
+        });
+  }
+
+  Future<void> _leaveProject() async {
+    final userId = UserSession.userId;
+    if (userId == null || userId.isEmpty || _projectId == null) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave project'),
+        content: const Text(
+          'You will lose access to this project. Are you sure you want to leave?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    try {
+      await BackendApi.leaveProject(projectId: _projectId!, userId: userId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('You left the project.')));
+      // Pop back to the project list so the user no longer sees the
+      // project they just left.
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      // The backend rejects owners with "Project owners cannot leave
+      // their own project. Delete the project instead." (HTTP 400).
+      // Surface that as a friendlier message instead of a raw exception.
+      final raw = error.toString();
+      final isOwner = raw.contains('owners cannot leave');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isOwner
+                ? 'You own this project. Delete it from the project options to remove it.'
+                : 'Could not leave project: $raw',
+          ),
+        ),
       );
     }
   }
@@ -689,8 +813,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black),
-            onPressed: _loadRepository,
+            tooltip: 'Leave project',
+            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: _leaveProject,
           ),
         ],
       ),
@@ -722,56 +847,110 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             ),
                           ),
                           padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'PROJECT REPOSITORY',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _projectTitle,
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${_projectPapers.length} papers • ${_versions.length} saved versions',
-                                  ),
-                                ],
+                              Text(
+                                'PROJECT REPOSITORY',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10,
+                                ),
                               ),
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 56,
-                                    height: 56,
-                                    child: CircularProgressIndicator(
-                                      value: _projectPapers.isEmpty ? 0.0 : 0.6,
-                                      strokeWidth: 5,
-                                      backgroundColor: theme
-                                          .colorScheme
-                                          .outlineVariant
-                                          .withOpacity(0.3),
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        theme.colorScheme.secondary,
-                                      ),
-                                    ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _projectTitle,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (_projectDescription.trim().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  _projectDescription,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
+                                    height: 1.35,
                                   ),
-                                  Text('${(_projectPapers.isEmpty ? 0 : 60)}%'),
-                                ],
+                                ),
+                              ],
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_projectPapers.length} papers • ${_versions.length} saved versions',
                               ),
                             ],
                           ),
                         ),
                       ),
+                      // ── Members tile ─────────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            onTap: _openMembersScreen,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant
+                                      .withOpacity(0.5),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.group_outlined,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Members',
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.secondary
+                                          .withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '$_membersCount',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.secondary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
@@ -795,52 +974,95 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // ── Research Papers (scrollable fixed-height box) ──
+                      // ── Research Papers (collapsed by default; tap the bar to expand) ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Research Papers',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w500,
+                        child: Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => setState(
+                              () => _papersSectionExpanded =
+                                  !_papersSectionExpanded,
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant
+                                      .withOpacity(0.5),
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.article_outlined,
+                                    color: Color(0xFF017ECB),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _papersSectionExpanded
+                                          ? 'Hide research papers'
+                                          : 'View research papers',
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '(${_projectPapers.where((p) => (p['citations'] as num? ?? 0) > 0).length} with citations)',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.outline,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    _papersSectionExpanded
+                                        ? Icons.expand_less_rounded
+                                        : Icons.expand_more_rounded,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '(${_projectPapers.where((p) => (p['citations'] as num? ?? 0) > 0).length} with citations)',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _projectPapers.isEmpty
-                            ? const Text('No papers were fetched yet.')
-                            : ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 380,
-                                ),
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    children: _projectPapers
-                                        .where(
-                                          (p) =>
-                                              (p['citations'] as num? ?? 0) > 0,
-                                        )
-                                        .map(
-                                          (paper) =>
-                                              _buildPaperCard(theme, paper),
-                                        )
-                                        .toList(),
+                      if (_papersSectionExpanded) ...[
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _projectPapers.isEmpty
+                              ? const Text('No papers were fetched yet.')
+                              : ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 380,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      children: _projectPapers
+                                          .where(
+                                            (p) =>
+                                                (p['citations'] as num? ?? 0) >
+                                                0,
+                                          )
+                                          .map(
+                                            (paper) =>
+                                                _buildPaperCard(theme, paper),
+                                          )
+                                          .toList(),
+                                    ),
                                   ),
                                 ),
-                              ),
-                      ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       // ── AI Collaboration Tools (always visible) ──
                       Padding(

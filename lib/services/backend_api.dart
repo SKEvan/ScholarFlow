@@ -7,11 +7,42 @@ import 'package:http/http.dart' as http;
 class BackendApi {
   BackendApi._();
 
-  static const String baseUrl = 'https://scholarflow-i4bq.onrender.com';
+  /// Production Render URL. Tests against a locally-running uvicorn on
+  /// 127.0.0.1:8765 can override this via [useLocalBackend] /
+  /// [useProductionBackend] without rebuilding the app.
+  ///
+  /// At startup the `--dart-define=BACKEND_URL=…` flag (or env var) takes
+  /// priority, so each feature branch can ship its own endpoint without
+  /// touching code.
+  static String _baseUrl = const String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: 'https://scholarflow-i4bq.onrender.com',
+  );
+
+  /// Read-only view of the active base URL. Screens / error messages
+  /// can show this so users can see which backend they're hitting.
+  static String get baseUrl => _baseUrl;
+
+  /// Switch to a local uvicorn instance for development. Pass
+  /// `useProductionBackend()` once you're done testing locally to go
+  /// back to Render.
+  static void useLocalBackend({String host = '127.0.0.1', int port = 8765}) {
+    _baseUrl = 'http://$host:$port';
+  }
+
+  /// Restore the production Render URL. Call this before releasing
+  /// the app or after you've finished local testing.
+  static void useProductionBackend() {
+    _baseUrl = 'https://scholarflow-i4bq.onrender.com';
+  }
 
   static String _connectionHint(Object error) {
     if (error is SocketException) {
-      return 'Backend not reachable at $baseUrl. Please verify the Render service is live.';
+      return 'Backend not reachable at $_baseUrl. '
+          'If you expected production, check Render is live. '
+          'If testing locally, run '
+          '`python -m uvicorn backend.main:app --host 127.0.0.1 --port 8765` '
+          'and call `BackendApi.useLocalBackend()`.';
     }
     return error.toString();
   }
@@ -166,12 +197,79 @@ class BackendApi {
     throw Exception('Unexpected backend response shape.');
   }
 
+  /// Fetch a profile row directly by user id. Returns the same shape as
+  /// [profileStatus]: `{"profile": {...}, "missing_fields": [...], "is_complete": bool}`.
+  /// Used by the profile screen to render real data instead of the
+  /// hardcoded "Dr. Julian Vance" placeholder.
+  static Future<Map<String, dynamic>> getProfile(String userId) async {
+    final response = await _send(
+      () => http.get(Uri.parse('$baseUrl/profiles/$userId')),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Backend request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Aggregated stats for the profile screen: total citations, total
+  /// papers, h-index, recent_projects list. See the backend
+  /// `get_profile_stats` method for the full payload shape.
+  static Future<Map<String, dynamic>> getProfileStats(String userId) async {
+    final response = await _send(
+      () => http.get(Uri.parse('$baseUrl/profiles/$userId/stats')),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Fetch every research paper across the user's accessible projects
+  /// (owned + membered). Returns `{"papers": [...], "total": N}`.
+  /// Each paper has `project_id` and `project_title` for grouping.
+  static Future<Map<String, dynamic>> listDashboardPapers(String userId) async {
+    final uri = Uri.parse('$baseUrl/dashboard/research-papers').replace(
+      queryParameters: {'user_id': userId},
+    );
+    final response = await _send(() => http.get(uri));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    throw Exception('Unexpected backend response shape.');
+  }
+
   static Future<Map<String, dynamic>> completeProfile({
     required String userId,
     required String fullName,
     String avatarUrl = '',
     String university = '',
     String role = '',
+    String about = '',
   }) async {
     final response = await _send(
       () => http.post(
@@ -185,6 +283,7 @@ class BackendApi {
           'avatar_url': avatarUrl,
           'university': university,
           'role': role,
+          'about': about,
         }),
       ),
     );
@@ -286,7 +385,11 @@ class BackendApi {
     required String userPrompt,
     required List<String> selectedPaperIds,
   }) {
-    final streamEndpoint = '$endpoint/stream';
+    // The deployed Render instance only exposes the non-streaming agent
+    // endpoints (e.g. `/agents/summary`). The `/stream` variants aren't
+    // registered, so we call the regular endpoint and synthesise a single
+    // token + done event from its response.
+    final streamEndpoint = endpoint;
     final client = http.Client();
     final controller = StreamController<AgentStreamEvent>();
 
@@ -411,6 +514,361 @@ class BackendApi {
       return decoded;
     }
 
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  // ------------------------------------------------------------------ //
+  // Project Members
+  // ------------------------------------------------------------------ //
+
+  static const Set<String> _validMemberRoles = {'viewer', 'editor', 'lead'};
+
+  /// Fetches every member of [projectId] with the joined `profiles` payload
+  /// (`full_name`, `avatar_url`, `university`, `role`).
+  static Future<List<Map<String, dynamic>>> listProjectMembers(
+    String projectId,
+  ) async {
+    final response = await _send(
+      () => http.get(Uri.parse('$baseUrl/projects/$projectId/members')),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final members = decoded is Map<String, dynamic> ? decoded['members'] : null;
+    if (members is List) {
+      return members
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Adds [userId] to [projectId] with the given [role]
+  /// (`viewer`, `editor`, or `lead`). [actorUserId] must be the project
+  /// owner or the backend will respond with 403.
+  static Future<Map<String, dynamic>> addProjectMember({
+    required String projectId,
+    required String userId,
+    required String role,
+    required String actorUserId,
+  }) async {
+    final normalized = role.trim().toLowerCase();
+    if (!_validMemberRoles.contains(normalized)) {
+      throw Exception(
+        'Invalid role "$role". Expected one of $_validMemberRoles.',
+      );
+    }
+
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/projects/$projectId/members'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'role': normalized,
+          'actor_user_id': actorUserId,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final member = decoded['member'];
+      if (member is Map) {
+        return Map<String, dynamic>.from(member);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Updates the role of an existing member row. [actorUserId] must be
+  /// the project owner or the backend will respond with 403.
+  static Future<Map<String, dynamic>> updateProjectMemberRole({
+    required String projectId,
+    required String memberId,
+    required String role,
+    required String actorUserId,
+  }) async {
+    final normalized = role.trim().toLowerCase();
+    if (!_validMemberRoles.contains(normalized)) {
+      throw Exception(
+        'Invalid role "$role". Expected one of $_validMemberRoles.',
+      );
+    }
+
+    final response = await _send(
+      () => http.patch(
+        Uri.parse('$baseUrl/projects/$projectId/members/$memberId'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'role': normalized, 'actor_user_id': actorUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final member = decoded['member'];
+      if (member is Map) {
+        return Map<String, dynamic>.from(member);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Removes the member row identified by [memberId] from [projectId].
+  /// [actorUserId] must be the project owner or the backend will
+  /// respond with 403. To remove yourself as a non-owner, use
+  /// [leaveProject] instead.
+  static Future<void> removeProjectMember({
+    required String projectId,
+    required String memberId,
+    required String actorUserId,
+  }) async {
+    final response = await _send(
+      () => http.delete(
+        Uri.parse('$baseUrl/projects/$projectId/members/$memberId'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'actor_user_id': actorUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  /// Removes the calling user ([userId]) from [projectId]. Only valid
+  /// when the caller is not the project owner — owners cannot leave
+  /// their own project.
+  static Future<void> leaveProject({
+    required String projectId,
+    required String userId,
+  }) async {
+    final response = await _send(
+      () => http.delete(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/members/by-user/$userId',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'user_id': userId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  // Invitations (collaboration_requests)
+  // ------------------------------------------------------------------ //
+
+  /// Fetches invitations for [projectId]. Pass [status] (pending, accepted,
+  /// declined, revoked) to narrow the result set.
+  static Future<List<Map<String, dynamic>>> listProjectInvitations(
+    String projectId, {
+    String? status,
+  }) async {
+    final uri = Uri.parse('$baseUrl/projects/$projectId/invitations').replace(
+      queryParameters: status != null ? {'status': status} : null,
+    );
+    final response = await _send(() => http.get(uri));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final invitations = decoded is Map<String, dynamic>
+        ? decoded['invitations']
+        : null;
+    if (invitations is List) {
+      return invitations
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Creates a new invitation. Returns the full row including the `token`
+  /// used by the invitee to accept / decline. [actorUserId] must be
+  /// the project owner or the backend will respond with 403.
+  static Future<Map<String, dynamic>> createProjectInvitation({
+    required String projectId,
+    required String email,
+    required String role,
+    String? invitedBy,
+    String message = '',
+    required String actorUserId,
+  }) async {
+    final normalized = role.trim().toLowerCase();
+    if (!_validMemberRoles.contains(normalized)) {
+      throw Exception(
+        'Invalid role "$role". Expected one of $_validMemberRoles.',
+      );
+    }
+    final payload = <String, dynamic>{
+      'email': email.trim(),
+      'role': normalized,
+      'actor_user_id': actorUserId,
+      if (message.trim().isNotEmpty) 'message': message.trim(),
+      if (invitedBy != null && invitedBy.isNotEmpty) 'invited_by': invitedBy,
+    };
+
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/projects/$projectId/invitations'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final invitation = decoded['invitation'];
+      if (invitation is Map) {
+        return Map<String, dynamic>.from(invitation);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Revokes a pending invitation. [actorUserId] must be the project
+  /// owner or the backend will respond with 403.
+  static Future<void> revokeProjectInvitation({
+    required String projectId,
+    required String invitationId,
+    required String actorUserId,
+  }) async {
+    final response = await _send(
+      () => http.delete(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/invitations/$invitationId',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'actor_user_id': actorUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
+  /// Lists pending invitations for the user identified by [email].
+  static Future<List<Map<String, dynamic>>> listMyInvitations(
+    String email,
+  ) async {
+    final uri = Uri.parse('$baseUrl/invitations').replace(
+      queryParameters: {'email': email.trim()},
+    );
+    final response = await _send(() => http.get(uri));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final invitations = decoded is Map<String, dynamic>
+        ? decoded['invitations']
+        : null;
+    if (invitations is List) {
+      return invitations
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Accepts an invitation by its [token]. The server flips the row to
+  /// "accepted" and inserts a matching `project_members` entry.
+  static Future<Map<String, dynamic>> acceptProjectInvitation({
+    required String token,
+    required String acceptingUserId,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/invitations/$token/accept'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'accepting_user_id': acceptingUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final invitation = decoded['invitation'];
+      if (invitation is Map) {
+        return Map<String, dynamic>.from(invitation);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Declines an invitation by its [token]. The row is flipped to
+  /// "declined"; no `project_members` row is created.
+  static Future<Map<String, dynamic>> declineProjectInvitation(
+    String token,
+  ) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/invitations/$token/decline'),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final invitation = decoded['invitation'];
+      if (invitation is Map) {
+        return Map<String, dynamic>.from(invitation);
+      }
+    }
     throw Exception('Unexpected backend response shape.');
   }
 }

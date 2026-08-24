@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../services/backend_api.dart';
 import '../services/user_session.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,6 +24,12 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    // Debug builds hit a local uvicorn so you can test without
+    // pushing; release builds keep talking to Render.
+    if (kDebugMode) {
+      BackendApi.useLocalBackend();
+    }
 
     _controller = AnimationController(
       vsync: this,
@@ -142,11 +150,12 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           Text(
                             'ScholarFlow',
-                            style: GoogleFonts.monteCarlo(
+                            style: GoogleFonts.poppins(
                               textStyle: theme.textTheme.titleLarge,
                               fontWeight: FontWeight.w600,
                               color: const Color.fromARGB(255, 255, 255, 255),
                               fontSize: 28,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(height: 8),

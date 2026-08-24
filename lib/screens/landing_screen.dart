@@ -83,11 +83,12 @@ class _LandingScreenState extends State<LandingScreen> {
                           const SizedBox(width: 10),
                           Text(
                             'ScholarFlow',
-                            style: GoogleFonts.monteCarlo(
+                            style: GoogleFonts.poppins(
                               textStyle: theme.textTheme.titleLarge,
                               fontWeight: FontWeight.w600,
                               color: const Color.fromARGB(255, 255, 255, 255),
-                              fontSize: 30,
+                              fontSize: 26,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],

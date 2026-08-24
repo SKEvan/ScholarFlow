@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_route_observer.dart';
 import '../services/backend_api.dart';
 import '../services/user_session.dart';
 import '../widgets/floating_nav_bar.dart';
@@ -12,7 +13,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   late Future<List<Map<String, dynamic>>> _projectsFuture;
   Map<String, dynamic> _profile = const {};
   List<String> _missingFields = const [];
@@ -28,8 +29,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    dashboardRouteObserver.unsubscribe(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // A route pushed on top of us (e.g. the invitations inbox) just popped.
+    // Re-fetch projects so a freshly-accepted invite shows up immediately.
+    super.didPopNext();
+    if (mounted) {
+      // Fire-and-forget; the Future setter updates _projectsFuture via setState.
+      _refreshProjects();
+    }
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
@@ -60,6 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      dashboardRouteObserver.subscribe(this, route);
+    }
     if (_profileLoaded) {
       return;
     }
@@ -231,15 +248,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ConnectionState.waiting) ...[
                         const SizedBox(height: 40),
                         const Center(
-                          child: CircularProgressIndicator(
-                            color: brandColor,
-                          ),
+                          child: CircularProgressIndicator(color: brandColor),
                         ),
                       ] else if (snapshot.hasError) ...[
-                        _buildErrorCard(
-                          snapshot.error.toString(),
-                          brandColor,
-                        ),
+                        _buildErrorCard(snapshot.error.toString(), brandColor),
                       ] else if (projects.isEmpty) ...[
                         _buildEmptyState(context, brandColor),
                       ] else ...[
@@ -253,6 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 24),
                     ],
                   );
                 },
@@ -281,11 +294,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Center(
                         child: Text(
                           'ScholarFlow',
-                          style: GoogleFonts.monteCarlo(
+                          style: GoogleFonts.poppins(
                             textStyle: theme.textTheme.titleLarge,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF0F172A),
-                            fontSize: 35,
+                            fontSize: 22,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),

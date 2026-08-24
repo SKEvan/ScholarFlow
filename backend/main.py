@@ -3,8 +3,9 @@ import json
 import logging
 from pathlib import Path
 import sys
+from typing import Dict, Optional
 
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -16,11 +17,14 @@ for path in (BASE_DIR, AGENTS_DIR):
     if path_text not in sys.path:
         sys.path.insert(0, path_text)
 
-from supabase_service import SupabaseError
-from supabase_service import supabase_service
-
+# Load .env BEFORE importing anything that reads env vars at module-import time
+# (e.g. supabase_service instantiates SupabaseService() at module load, which
+# reads os.getenv("SUPABASE_URL") / os.getenv("SUPABASE_API_KEY")).
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(AGENTS_DIR / ".env")
+
+from supabase_service import SupabaseError
+from supabase_service import supabase_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,6 +65,37 @@ class RestoreVersionRequest(BaseModel):
     version_id: str                         # UUID → str
 
 
+class AddMemberRequest(BaseModel):
+    user_id: str                             # UUID → str
+    role: str = Field(default="editor")
+    actor_user_id: str | None = None         # caller; must be the project owner
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role: str
+    actor_user_id: str | None = None         # caller; must be the project owner
+
+
+class CreateInvitationRequest(BaseModel):
+    email: str
+    role: str = Field(default="viewer")
+    message: str = Field(default="")
+    invited_by: str | None = None          # UUID → str
+    actor_user_id: str | None = None         # caller; must be the project owner
+
+
+class RevokeInvitationRequest(BaseModel):
+    actor_user_id: str | None = None         # caller; must be the project owner
+
+
+class LeaveProjectRequest(BaseModel):
+    user_id: str                              # UUID → str of the leaver
+
+
+class AcceptInvitationRequest(BaseModel):
+    accepting_user_id: str                  # UUID → str
+
+
 class SignUpRequest(BaseModel):
     email: str
     password: str
@@ -85,6 +120,7 @@ class CompleteProfileRequest(BaseModel):
     avatar_url: str = Field(default="")
     university: str = Field(default="")
     role: str = Field(default="")
+    about: str = Field(default="")
 
 
 def _load_project_abstracts(project_id: str, selected_paper_ids: list[str] | None = None) -> list[dict]:
@@ -187,9 +223,45 @@ def profile_status(payload: ProfileStatusRequest) -> dict:
     }
 
 
+@app.get("/profiles/{user_id}")
+def get_profile(user_id: str) -> dict:
+    """GET profile fields for a user. Returns the row plus the list of
+    required fields still missing (for the dashboard banner / profile
+    completion flow)."""
+    _ensure_supabase()
+    profile = supabase_service.get_profile(user_id)
+    missing_fields = supabase_service.profile_missing_fields(profile)
+    return {
+        "profile": profile,
+        "missing_fields": missing_fields,
+        "is_complete": len(missing_fields) == 0,
+    }
+
+
+@app.get("/profiles/{user_id}/stats")
+def get_profile_stats(user_id: str) -> dict:
+    """Aggregated stats for the profile screen: total citations, total
+    papers, h-index, and the user's most recent projects (owned and
+    membered)."""
+    _ensure_supabase()
+    stats = supabase_service.get_profile_stats(user_id)
+    return stats
+
+
+@app.get("/dashboard/research-papers")
+def dashboard_research_papers(user_id: str) -> dict:
+    """All research papers across the user's accessible projects
+    (owned + membered), with project title attached. Used by the
+    dashboard's expandable Research Papers section."""
+    _ensure_supabase()
+    papers = supabase_service.list_dashboard_papers(user_id)
+    return {"papers": papers, "total": len(papers)}
+
+
 @app.post("/auth/complete-profile")
 def complete_profile(payload: CompleteProfileRequest) -> dict:
     _ensure_supabase()
+    about_value = payload.about.strip()
     profile = supabase_service.upsert_profile(
         payload.user_id,
         {
@@ -197,6 +269,14 @@ def complete_profile(payload: CompleteProfileRequest) -> dict:
             "avatar_url": payload.avatar_url.strip() or None,
             "university": payload.university.strip() or None,
             "role": payload.role.strip() or None,
+            # Only persist `about` when the column exists in the DB.
+            # Until migration 001 is applied the column is absent and
+            # PostgREST would reject the upsert with an error, so we
+            # omit the key for empty payloads and otherwise let the
+            # service layer handle it (PostgREST will 400 if the column
+            # is still missing -- callers can retry after running the
+            # migration).
+            **({"about": about_value} if about_value else {}),
         },
     )
     missing_fields = supabase_service.profile_missing_fields(profile)
@@ -378,6 +458,243 @@ def project_repository(project_id: str) -> dict:   # UUID → str
     papers = supabase_service.list_project_papers(project_id)
     versions = supabase_service.list_versions(project_id)
     return {"project": project, "papers": papers, "versions": versions}
+
+
+# ---------------------------------------------------------------------- #
+# Project Members
+# ---------------------------------------------------------------------- #
+
+_ALLOWED_MEMBER_ROLES = {"viewer", "editor", "lead"}
+
+
+@app.get("/projects/{project_id}/members")
+def list_project_members(project_id: str) -> dict:    # UUID → str
+    _ensure_supabase()
+    members = supabase_service.list_project_members(project_id)
+    return {"members": members}
+
+
+def _require_project_owner(project_id: str, actor_user_id: Optional[str]) -> str:
+    """Confirm the calling user is the project owner.
+
+    `actor_user_id` comes from the request body (AddMemberRequest /
+    UpdateMemberRoleRequest / CreateInvitationRequest). When it's
+    missing or doesn't match the project's owner_id, raise 403.
+    """
+    if not actor_user_id or not str(actor_user_id).strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Only the project owner can perform this action.",
+        )
+    project = supabase_service.get_project(project_id)
+    owner_id = project.get("owner_id") if isinstance(project, dict) else None
+    if not owner_id or str(owner_id) != str(actor_user_id).strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Only the project owner can perform this action.",
+        )
+    return str(actor_user_id).strip()
+
+
+@app.post("/projects/{project_id}/members")
+def add_project_member(project_id: str, payload: AddMemberRequest) -> Dict:
+    _ensure_supabase()
+    _require_project_owner(project_id, payload.actor_user_id)
+    role = (payload.role or "").strip().lower()
+    if role not in _ALLOWED_MEMBER_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role '{payload.role}'. Expected one of "
+                   f"{sorted(_ALLOWED_MEMBER_ROLES)}.",
+        )
+    user_id = (payload.user_id or "").strip()
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required.")
+    try:
+        member = supabase_service.add_project_member(project_id, user_id, role)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"member": member}
+
+
+@app.patch("/projects/{project_id}/members/{member_id}")
+def update_project_member_role(
+    project_id: str,                              # UUID → str
+    member_id: str,                                # UUID → str
+    payload: UpdateMemberRoleRequest,
+) -> Dict:
+    _ensure_supabase()
+    _require_project_owner(project_id, payload.actor_user_id)
+    role = (payload.role or "").strip().lower()
+    if role not in _ALLOWED_MEMBER_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role '{payload.role}'. Expected one of "
+                   f"{sorted(_ALLOWED_MEMBER_ROLES)}.",
+        )
+    try:
+        member = supabase_service.update_project_member_role(member_id, role)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found.")
+    return {"member": member}
+
+
+@app.delete("/projects/{project_id}/members/{member_id}")
+def remove_project_member(
+    project_id: str,                              # UUID → str
+    member_id: str,                               # UUID → str
+    payload: Optional[RevokeInvitationRequest] = None,   # owner-gated
+) -> dict:
+    _ensure_supabase()
+    actor = (payload.actor_user_id if payload else None)
+    _require_project_owner(project_id, actor)
+    supabase_service.remove_project_member(member_id)
+    return {"removed": True, "member_id": member_id}
+
+
+@app.delete("/projects/{project_id}/members/by-user/{user_id}")
+def leave_project(
+    project_id: str,                              # UUID → str
+    user_id: str,                                 # UUID → str of the leaver
+    payload: LeaveProjectRequest,
+) -> dict:
+    """Allow a non-owner member to remove themselves from a project.
+
+    Only the user identified by `user_id` (matched against the
+    `actor_user_id` in the body) may call this; owners can use the
+    generic DELETE endpoint above. The owner of a project cannot leave
+    their own project through this route.
+    """
+    _ensure_supabase()
+    if not payload.user_id or str(payload.user_id).strip() != str(user_id).strip():
+        raise HTTPException(
+            status_code=403,
+            detail="You can only leave a project on your own behalf.",
+        )
+    project = supabase_service.get_project(project_id)
+    owner_id = project.get("owner_id") if isinstance(project, dict) else None
+    if owner_id and str(owner_id) == str(user_id).strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Project owners cannot leave their own project. "
+                   "Delete the project instead.",
+        )
+    # Look up the membership row id and delete it.
+    rows = supabase_service._request(  # noqa: SLF001 - intentional internal use
+        "GET",
+        "project_members",
+        params={
+            "project_id": f"eq.{project_id}",
+            "user_id": f"eq.{user_id}",
+            "select": "id",
+        },
+    )
+    target_id = None
+    if isinstance(rows, list) and rows:
+        target_id = rows[0].get("id")
+    if not target_id:
+        raise HTTPException(
+            status_code=404,
+            detail="You are not a member of this project.",
+        )
+    supabase_service.remove_project_member(target_id)
+    return {"removed": True, "member_id": target_id, "project_id": project_id}
+
+
+# ---------------------------------------------------------------------- #
+# Invitations (collaboration_requests)
+# ---------------------------------------------------------------------- #
+
+
+@app.get("/projects/{project_id}/invitations")
+def list_project_invitations(
+    project_id: str,                                  # UUID → str
+    status: str | None = None,
+) -> dict:
+    _ensure_supabase()
+    try:
+        invitations = supabase_service.list_invitations(
+            project_id=project_id, status=status
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"invitations": invitations}
+
+
+@app.post("/projects/{project_id}/invitations")
+def create_project_invitation(
+    project_id: str,                                  # UUID → str
+    payload: CreateInvitationRequest,
+) -> dict:
+    _ensure_supabase()
+    _require_project_owner(project_id, payload.actor_user_id)
+    role = (payload.role or "").strip().lower()
+    if role not in _ALLOWED_MEMBER_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role '{payload.role}'. Expected one of "
+                   f"{sorted(_ALLOWED_MEMBER_ROLES)}.",
+        )
+    try:
+        invitation = supabase_service.create_invitation(
+            project_id=project_id,
+            email=payload.email,
+            role=role,
+            invited_by=payload.invited_by,
+            message=payload.message,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"invitation": invitation}
+
+
+@app.delete("/projects/{project_id}/invitations/{invitation_id}")
+def revoke_project_invitation(
+    project_id: str,                                  # UUID → str
+    invitation_id: str,                               # UUID → str
+    payload: Optional[RevokeInvitationRequest] = None,
+) -> dict:
+    _ensure_supabase()
+    actor = (payload.actor_user_id if payload else None)
+    _require_project_owner(project_id, actor)
+    supabase_service.revoke_invitation(invitation_id)
+    return {"revoked": True, "invitation_id": invitation_id}
+
+
+@app.get("/invitations")
+def list_my_invitations(email: str | None = None) -> dict:
+    """Inbox for the invited user — matches by lowercased email."""
+    _ensure_supabase()
+    if not email:
+        return {"invitations": []}
+    invitations = supabase_service.list_invitations(email=email)
+    pending = [inv for inv in invitations if (inv.get("status") or "").lower() == "pending"]
+    return {"invitations": pending, "total": len(pending)}
+
+
+@app.post("/invitations/{token}/accept")
+def accept_invitation(token: str, payload: AcceptInvitationRequest) -> dict:
+    _ensure_supabase()
+    user_id = (payload.accepting_user_id or "").strip()
+    if not user_id:
+        raise HTTPException(status_code=400, detail="accepting_user_id is required.")
+    try:
+        invitation = supabase_service.accept_invitation(token, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"invitation": invitation}
+
+
+@app.post("/invitations/{token}/decline")
+def decline_invitation(token: str) -> dict:
+    _ensure_supabase()
+    try:
+        invitation = supabase_service.decline_invitation(token)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"invitation": invitation}
 
 
 @app.get("/projects")

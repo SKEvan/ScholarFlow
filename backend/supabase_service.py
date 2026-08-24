@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import os
+import secrets
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
 import requests
+
+
+def _utcnow_iso() -> str:
+    """ISO-8601 UTC timestamp with 'Z' suffix, suitable for timestamptz cols."""
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class SupabaseError(RuntimeError):
@@ -147,7 +154,30 @@ class SupabaseService:
     def list_projects(self, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
         params: Dict[str, Any] = {"select": "*", "order": "created_at.desc"}
         if owner_id:
-            params["owner_id"] = f"eq.{owner_id}"
+            # A user can see a project either because they own it, or because
+            # they're a row in `project_members`. PostgREST's `or=` filter
+            # supports both, but `project_members.project_id` references
+            # projects.id, so the right side is `id.in.(...)` of project ids
+            # the user belongs to.
+            member_rows = self._request(
+                "GET",
+                "project_members",
+                params={
+                    "user_id": f"eq.{owner_id}",
+                    "select": "project_id",
+                },
+            )
+            member_project_ids: List[str] = []
+            for row in (member_rows if isinstance(member_rows, list) else []):
+                pid = row.get("project_id")
+                if pid:
+                    member_project_ids.append(pid)
+            clauses = [f"owner_id.eq.{owner_id}"]
+            if member_project_ids:
+                # PostgREST `in.` filter expects a parenthesised CSV.
+                ids_csv = ",".join(member_project_ids)
+                clauses.append(f"id.in.({ids_csv})")
+            params["or"] = f"({','.join(clauses)})"
         result = self._request("GET", "projects", params=params)
         projects = result if isinstance(result, list) else []
         if not projects:
@@ -230,6 +260,262 @@ class SupabaseService:
         return result if isinstance(result, list) else [result]
 
     # ------------------------------------------------------------------ #
+    # Project Members
+    # ------------------------------------------------------------------ #
+
+    _VALID_MEMBER_ROLES = ("viewer", "editor", "lead")
+
+    def list_project_members(self, project_id: str) -> List[Dict[str, Any]]:
+        # UUID → str. Joins each member's profile so the UI can render the
+        # avatar/name without a second round-trip.
+        result = self._request(
+            "GET",
+            "project_members",
+            params={
+                "project_id": f"eq.{project_id}",
+                "select": "id,project_id,user_id,member_role,joined_at,created_at,"
+                          "profiles:user_id(id,full_name,avatar_url,university,role)",
+                "order": "joined_at.asc",
+            },
+        )
+        return result if isinstance(result, list) else []
+
+    def add_project_member(
+        self,
+        project_id: str,                          # UUID → str
+        user_id: str,                             # UUID → str
+        role: str,
+    ) -> Dict[str, Any]:
+        normalized = (role or "").strip().lower()
+        if normalized not in self._VALID_MEMBER_ROLES:
+            raise ValueError(
+                f"Invalid role '{role}'. Expected one of {self._VALID_MEMBER_ROLES}."
+            )
+        payload = {
+            "project_id": project_id,
+            "user_id": user_id,
+            "member_role": normalized,
+        }
+        result = self._request(
+            "POST",
+            "project_members",
+            params={"select": "id,project_id,user_id,member_role,joined_at,created_at,"
+                              "profiles:user_id(id,full_name,avatar_url,university,role)"},
+            json_body=payload,
+        )
+        return self._single(result)
+
+    def update_project_member_role(
+        self,
+        member_id: str,                          # UUID → str
+        role: str,
+    ) -> Dict[str, Any]:
+        normalized = (role or "").strip().lower()
+        if normalized not in self._VALID_MEMBER_ROLES:
+            raise ValueError(
+                f"Invalid role '{role}'. Expected one of {self._VALID_MEMBER_ROLES}."
+            )
+        result = self._request(
+            "PATCH",
+            "project_members",
+            params={
+                "id": f"eq.{member_id}",
+                "select": "id,project_id,user_id,member_role,joined_at,created_at,"
+                          "profiles:user_id(id,full_name,avatar_url,university,role)",
+            },
+            json_body={"member_role": normalized},
+        )
+        return self._single(result)
+
+    def remove_project_member(self, member_id: str) -> None:    # UUID → str
+        self._request(
+            "DELETE",
+            "project_members",
+            params={"id": f"eq.{member_id}"},
+        )
+
+    # ------------------------------------------------------------------ #
+    # Invitations (collaboration_requests)
+    # ------------------------------------------------------------------ #
+    #
+    # Backed by the existing `collaboration_requests` table, extended with
+    # role/email/status/token columns. Existing rows are untouched. The
+    # legacy `create_collaboration_requests` helper above is preserved for
+    # any code path that still uses it (project research flow).
+
+    _VALID_INVITE_STATUSES = ("pending", "accepted", "declined", "revoked")
+    # NOTE: `profiles` table does not have an `email` column (email lives in
+    # auth.users). The invitee's email is already on collaboration_requests.email,
+    # so the invited_user embed only pulls name/avatar from profiles.
+    _INVITATION_SELECT = (
+        "id,project_id,requested_by,requested_to,role,email,status,token,"
+        "message,created_at,responded_at,accepted_by,"
+        "projects:project_id(id,title,owner_id),"
+        "profiles:requested_by(id,full_name,avatar_url,university),"
+        "invited_user:requested_to(id,full_name,avatar_url,university)"
+    )
+
+    def _generate_invite_token(self) -> str:
+        # 32 url-safe bytes ≈ 43 chars. Plenty of entropy and safe to share
+        # in a URL fragment / query string.
+        return secrets.token_urlsafe(32)
+
+    def _normalize_role(self, role: str) -> str:
+        normalized = (role or "").strip().lower()
+        if normalized not in self._VALID_MEMBER_ROLES:
+            raise ValueError(
+                f"Invalid role '{role}'. Expected one of {self._VALID_MEMBER_ROLES}."
+            )
+        return normalized
+
+    def list_invitations(
+        self,
+        project_id: Optional[str] = None,
+        status: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {
+            "select": self._INVITATION_SELECT,
+            "order": "created_at.desc",
+        }
+        if project_id:
+            params["project_id"] = f"eq.{project_id}"
+        if status:
+            normalized = (status or "").strip().lower()
+            if normalized not in self._VALID_INVITE_STATUSES:
+                raise ValueError(
+                    f"Invalid status '{status}'. "
+                    f"Expected one of {self._VALID_INVITE_STATUSES}."
+                )
+            params["status"] = f"eq.{normalized}"
+        if email:
+            params["email"] = f"ilike.{email.strip().lower()}"
+        result = self._request("GET", "collaboration_requests", params=params)
+        return result if isinstance(result, list) else []
+
+    def get_invitation_by_token(self, token: str) -> Optional[Dict[str, Any]]:
+        if not token:
+            return None
+        result = self._request(
+            "GET",
+            "collaboration_requests",
+            params={
+                "token": f"eq.{token}",
+                "select": self._INVITATION_SELECT,
+                "limit": "1",
+            },
+        )
+        if isinstance(result, list):
+            return result[0] if result else None
+        return result if isinstance(result, dict) else None
+
+    def create_invitation(
+        self,
+        project_id: str,
+        email: str,
+        role: str,
+        invited_by: Optional[str] = None,
+        message: Optional[str] = None,
+        token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        clean_email = (email or "").strip().lower()
+        if not clean_email or "@" not in clean_email:
+            raise ValueError("A valid invitee email is required.")
+        normalized_role = self._normalize_role(role)
+        payload: Dict[str, Any] = {
+            "project_id": project_id,
+            "email": clean_email,
+            "role": normalized_role,
+            "status": "pending",
+            "token": token or self._generate_invite_token(),
+            "message": (message or "").strip() or f"Invite collaborator: {clean_email}",
+        }
+        if invited_by:
+            payload["requested_by"] = invited_by
+        result = self._request(
+            "POST",
+            "collaboration_requests",
+            params={"select": self._INVITATION_SELECT},
+            json_body=payload,
+        )
+        return self._single(result)
+
+    def accept_invitation(
+        self,
+        token: str,
+        accepting_user_id: str,
+    ) -> Dict[str, Any]:
+        invitation = self.get_invitation_by_token(token)
+        if not invitation:
+            raise ValueError("Invitation not found.")
+        if (invitation.get("status") or "").lower() != "pending":
+            raise ValueError(
+                f"Invitation is already {invitation.get('status') or 'used'}."
+            )
+        project_id = invitation.get("project_id")
+        role = (invitation.get("role") or "viewer").lower()
+        if not project_id:
+            raise ValueError("Invitation is missing a project reference.")
+
+        # Flip the invitation to accepted first so a failed member insert
+        # leaves the audit row in a recoverable state.
+        updated = self._request(
+            "PATCH",
+            "collaboration_requests",
+            params={
+                "id": f"eq.{invitation['id']}",
+                "select": self._INVITATION_SELECT,
+            },
+            json_body={
+                "status": "accepted",
+                "responded_at": _utcnow_iso(),
+                "accepted_by": accepting_user_id,
+            },
+        )
+        try:
+            self.add_project_member(project_id, accepting_user_id, role)
+        except Exception:
+            # Revert the status so the user can retry instead of being stuck.
+            self._request(
+                "PATCH",
+                "collaboration_requests",
+                params={
+                    "id": f"eq.{invitation['id']}",
+                    "select": self._INVITATION_SELECT,
+                },
+                json_body={"status": "pending", "accepted_by": None},
+            )
+            raise
+        return self._single(updated)
+
+    def decline_invitation(self, token: str) -> Dict[str, Any]:
+        invitation = self.get_invitation_by_token(token)
+        if not invitation:
+            raise ValueError("Invitation not found.")
+        if (invitation.get("status") or "").lower() != "pending":
+            raise ValueError(
+                f"Invitation is already {invitation.get('status') or 'used'}."
+            )
+        result = self._request(
+            "PATCH",
+            "collaboration_requests",
+            params={
+                "id": f"eq.{invitation['id']}",
+                "select": self._INVITATION_SELECT,
+            },
+            json_body={"status": "declined", "responded_at": _utcnow_iso()},
+        )
+        return self._single(result)
+
+    def revoke_invitation(self, invitation_id: str) -> None:
+        self._request(
+            "PATCH",
+            "collaboration_requests",
+            params={"id": f"eq.{invitation_id}"},
+            json_body={"status": "revoked", "responded_at": _utcnow_iso()},
+        )
+
+    # ------------------------------------------------------------------ #
     # Papers
     # ------------------------------------------------------------------ #
 
@@ -276,6 +562,39 @@ class SupabaseService:
             params["is_selected"] = "eq.true"
         result = self._request("GET", "project_papers", params=params)
         return result if isinstance(result, list) else []
+
+    def list_dashboard_papers(self, user_id: str) -> List[Dict[str, Any]]:
+        """Every research paper across the user's accessible projects
+        (owned + membered). Each paper is annotated with its project_id
+        and project_title so the dashboard can group by project.
+        """
+        if not user_id:
+            return []
+        # 1. Resolve the visible project set.
+        projects = self.list_projects(owner_id=user_id) or []
+        project_ids: List[str] = [str(p.get("id")) for p in projects if p.get("id")]
+        if not project_ids:
+            return []
+        id_list = ",".join(project_ids)
+        # 2. Pull all papers for those projects, most-cited first.
+        papers = self._request(
+            "GET",
+            "project_papers",
+            params={
+                "project_id": f"in.({id_list})",
+                "select": "*",
+                "order": "citations.desc",
+            },
+        )
+        if not isinstance(papers, list):
+            return []
+        # 3. Annotate with project title for the UI.
+        title_by_id = {str(p.get("id")): p.get("title", "") for p in projects}
+        for paper in papers:
+            pid = paper.get("project_id")
+            if pid is not None:
+                paper["project_title"] = title_by_id.get(str(pid), "")
+        return papers
 
     def set_project_papers_selection(self, project_id: str, selected_ids: List[str]) -> None:
         # UUID → str for both project_id and selected_ids (was List[int])
@@ -461,6 +780,103 @@ class SupabaseService:
             if not value:
                 missing.append(field)
         return missing
+
+    # ------------------------------------------------------------------ #
+    # Profile stats
+    # ------------------------------------------------------------------ #
+
+    def get_profile_stats(self, user_id: str) -> Dict[str, Any]:
+        """Aggregate stats for the profile screen.
+
+        Returns citations_total (sum of project_papers.citations for every
+        project the user owns or is a member of), h_index (the largest N
+        such that the user has N papers with >= N citations each), and
+        recent_projects (up to 5 most recently created projects owned or
+        membered, with paper + citation counts).
+        """
+        if not user_id:
+            return {
+                "user_id": user_id,
+                "citations_total": 0,
+                "papers_total": 0,
+                "h_index": 0,
+                "recent_projects": [],
+                "owned_projects": 0,
+                "member_projects": 0,
+            }
+
+        # 1. Collect every project the user can see (owned + membered).
+        projects = self.list_projects(owner_id=user_id) or []
+        project_ids: List[str] = [str(p.get("id")) for p in projects if p.get("id")]
+        owned_count = 0
+        member_count = 0
+        for project in projects:
+            owner_id_val = project.get("owner_id")
+            if owner_id_val and str(owner_id_val) == str(user_id):
+                owned_count += 1
+            else:
+                member_count += 1
+
+        # 2. Sum citation counts from project_papers.
+        citations_total = 0
+        papers_total = 0
+        citation_per_paper: List[int] = []
+        if project_ids:
+            id_list = ",".join(project_ids)
+            paper_rows = self._request(
+                "GET",
+                "project_papers",
+                params={
+                    "project_id": f"in.({id_list})",
+                    "select": "citations",
+                },
+            )
+            for row in (paper_rows if isinstance(paper_rows, list) else []):
+                cit_raw = row.get("citations")
+                try:
+                    cit_val = int(cit_raw or 0)
+                except (TypeError, ValueError):
+                    cit_val = 0
+                citation_per_paper.append(cit_val)
+                citations_total += cit_val
+                papers_total += 1
+
+        # 3. H-index: largest N such that >= N papers have >= N citations.
+        citation_per_paper.sort(reverse=True)
+        h_index = 0
+        for idx, cit in enumerate(citation_per_paper, start=1):
+            if cit >= idx:
+                h_index = idx
+            else:
+                break
+
+        # 4. Recent projects: already ordered by created_at.desc from
+        # list_projects; cap at 5. Each entry includes paper_count and
+        # citation sum for that single project.
+        recent: List[Dict[str, Any]] = []
+        for project in projects[:5]:
+            pid = project.get("id")
+            entry = {
+                "id": pid,
+                "title": project.get("title"),
+                "status": project.get("status"),
+                "owner_id": project.get("owner_id"),
+                "created_at": project.get("created_at"),
+                "updated_at": project.get("updated_at"),
+                "paper_count": project.get("paper_count", 0),
+                "version_count": project.get("version_count", 0),
+            }
+            recent.append(entry)
+
+        return {
+            "user_id": user_id,
+            "citations_total": citations_total,
+            "papers_total": papers_total,
+            "h_index": h_index,
+            "recent_projects": recent,
+            "owned_projects": owned_count,
+            "member_projects": member_count,
+        }
 
 
 supabase_service = SupabaseService()

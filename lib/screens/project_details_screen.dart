@@ -98,6 +98,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   bool _papersSectionExpanded = false;
   int _membersCount = 0;
 
+  // Draft section ownership + approved content, keyed by section_key.
+  // Populated by _loadSections(); each entry mirrors the backend's
+  // project_sections row (owner, owner's profile, approved_content, ...).
+  Map<String, Map<String, dynamic>> _sectionData = {};
+
+  // The project owner is the "leader" — only they can assign a section's
+  // owner. This mirrors the existing _isOwner check in
+  // ProjectMembersScreen.
+  bool get _isLeader =>
+      _ownerId != null &&
+      _ownerId!.isNotEmpty &&
+      _ownerId == UserSession.userId;
+
   @override
   void dispose() {
     _versionNameController.dispose();
@@ -105,17 +118,193 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     super.dispose();
   }
 
-  void _openSectionEditor(Map<String, Object> section) {
-    if (_projectId == null) return;
-    Navigator.of(context).pushNamed(
-      '/project-section-editor',
-      arguments: {
-        'projectId': _projectId,
-        'projectTitle': _projectTitle,
-        'sectionKey': section['key'],
-        'sectionLabel': section['label'],
+  /// Fetches the four draft sections (owner + approved content) for the
+  /// tile cards. Best-effort like _loadMembersCount — a failure here
+  /// shouldn't block the rest of the page.
+  Future<void> _loadSections() async {
+    if (_projectId == null) {
+      return;
+    }
+    try {
+      final sections = await BackendApi.listProjectSections(_projectId!);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sectionData = {
+          for (final section in sections)
+            if (section['section_key'] != null)
+              section['section_key'].toString(): section,
+        };
+      });
+    } catch (_) {
+      // Silent failure — cards fall back to their "unassigned" defaults.
+    }
+  }
+
+  void _openSectionEditor(Map<String, Object> def) {
+    if (_projectId == null) {
+      return;
+    }
+    final sectionKey = def['key'] as String;
+    final data = _sectionData[sectionKey];
+    final ownerUserId = data?['owner_user_id']?.toString();
+    final isOwner =
+        ownerUserId != null && ownerUserId == UserSession.userId;
+    Navigator.of(context)
+        .pushNamed(
+          '/project-section-editor',
+          arguments: {
+            'projectId': _projectId,
+            'projectTitle': _projectTitle,
+            'sectionKey': sectionKey,
+            'sectionLabel': def['label'],
+            'isOwner': isOwner,
+            'approvedContent': data?['approved_content']?.toString() ?? '',
+          },
+        )
+        .then((_) => _loadSections());
+  }
+
+  void _openEditRequests(Map<String, Object> def) {
+    if (_projectId == null) {
+      return;
+    }
+    final sectionKey = def['key'] as String;
+    Navigator.of(context)
+        .pushNamed(
+          '/project-section-edit-requests',
+          arguments: {
+            'projectId': _projectId,
+            'sectionKey': sectionKey,
+            'sectionLabel': def['label'],
+          },
+        )
+        .then((_) => _loadSections());
+  }
+
+  Future<void> _openAssignOwnerSheet(Map<String, Object> def) async {
+    if (_projectId == null) {
+      return;
+    }
+    final sectionKey = def['key'] as String;
+    final sectionLabel = def['label'] as String;
+
+    List<Map<String, dynamic>> members;
+    try {
+      members = await BackendApi.listProjectMembers(_projectId!);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load members: $error')),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final currentOwnerId = _sectionData[sectionKey]?['owner_user_id']
+        ?.toString();
+
+    final selectedUserId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Assign owner — $sectionLabel',
+                  style: Theme.of(sheetContext).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Only this person can edit this section directly and '
+                  'approve edit requests from others.',
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                if (members.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text('No members on this project yet.'),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 360),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: members.length,
+                      itemBuilder: (context, index) {
+                        final member = members[index];
+                        final profile =
+                            member['profiles'] as Map<String, dynamic>?;
+                        final userId = member['user_id']?.toString() ?? '';
+                        final name =
+                            profile?['full_name']?.toString().trim();
+                        final isCurrentOwner = userId == currentOwnerId;
+                        return ListTile(
+                          leading: const Icon(Icons.person_outline_rounded),
+                          title: Text(
+                            (name == null || name.isEmpty)
+                                ? 'Unnamed member'
+                                : name,
+                          ),
+                          trailing: isCurrentOwner
+                              ? const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFF017ECB),
+                                )
+                              : null,
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop(userId),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
       },
     );
+
+    if (selectedUserId == null || selectedUserId.isEmpty || !mounted) {
+      return;
+    }
+
+    final actorUserId = UserSession.userId;
+    if (actorUserId == null || actorUserId.isEmpty) {
+      return;
+    }
+
+    try {
+      await BackendApi.assignSectionOwner(
+        projectId: _projectId!,
+        sectionKey: sectionKey,
+        ownerUserId: selectedUserId,
+        actorUserId: actorUserId,
+      );
+      if (!mounted) return;
+      await _loadSections();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$sectionLabel owner updated.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not assign owner: $error')),
+      );
+    }
   }
 
   @override
@@ -180,9 +369,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         _isLoading = false;
       });
 
-      // Best-effort member count for the tile. Never blocks the main load.
+      // Best-effort member count + draft sections. Never blocks the main load.
       // ignore: unawaited_futures
       _loadMembersCount();
+      // ignore: unawaited_futures
+      _loadSections();
     } catch (error) {
       if (!mounted) {
         return;
@@ -621,15 +812,33 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  Widget _buildDraftSectionCard(ThemeData theme, Map<String, Object> section) {
-    final icon = section['icon'] as IconData;
-    final label = section['label'] as String;
-    final description = section['description'] as String;
+  Widget _buildDraftSectionCard(ThemeData theme, Map<String, Object> def) {
+    final icon = def['icon'] as IconData;
+    final label = def['label'] as String;
+    final description = def['description'] as String;
+    final sectionKey = def['key'] as String;
+
+    final data = _sectionData[sectionKey];
+    final ownerProfile = data?['owner'] as Map<String, dynamic>?;
+    final ownerUserId = data?['owner_user_id']?.toString();
+    final approverProfile = data?['approver'] as Map<String, dynamic>?;
+    final ownerName = ownerProfile?['full_name']?.toString().trim();
+    final approverName = approverProfile?['full_name']?.toString().trim();
+    final isOwner = ownerUserId != null && ownerUserId == UserSession.userId;
+
+    final String statusText;
+    if (approverName != null && approverName.isNotEmpty) {
+      statusText = 'Last edited by $approverName';
+    } else if (ownerName != null && ownerName.isNotEmpty) {
+      statusText = 'Owned by $ownerName · not edited yet';
+    } else {
+      statusText = 'No owner assigned yet';
+    }
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _openSectionEditor(section),
+        onTap: () => _openSectionEditor(def),
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(18),
@@ -692,60 +901,89 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline_rounded,
-                        size: 15,
-                        color: Color(0xFF64748B),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Last edited by You',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF475569),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline_rounded,
+                          size: 15,
+                          color: Color(0xFF64748B),
                         ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            statusText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      if (_isLeader)
+                        _sectionActionPill(
+                          icon: Icons.person_add_alt_1_rounded,
+                          label: 'Assign',
+                          onTap: () => _openAssignOwnerSheet(def),
+                        ),
+                      if (isOwner)
+                        _sectionActionPill(
+                          icon: Icons.rate_review_outlined,
+                          label: 'Requests',
+                          onTap: () => _openEditRequests(def),
+                        ),
+                      _sectionActionPill(
+                        icon: Icons.edit_rounded,
+                        label: 'Edit',
+                        onTap: () => _openSectionEditor(def),
                       ),
                     ],
                   ),
-                  Material(
-                    color: const Color(0xFF017ECB).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => _openSectionEditor(section),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.edit_rounded,
-                              size: 14,
-                              color: Color(0xFF017ECB),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Edit',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF017ECB),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionActionPill({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFF017ECB).withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: const Color(0xFF017ECB)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF017ECB),
+                ),
               ),
             ],
           ),

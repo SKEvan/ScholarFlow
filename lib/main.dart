@@ -29,6 +29,7 @@ import 'screens/research_gap_screen.dart';
 import 'screens/agent_literature_review_screen.dart';
 import 'screens/notes_screen.dart';
 import 'screens/note_editor_screen.dart';
+import 'screens/editor_test_screen.dart'; // TODO: remove after widget review
 import 'app_route_observer.dart';
 
 Future<void> main() async {
@@ -64,6 +65,7 @@ class ScholarFlowApp extends StatelessWidget {
             '/forgot-password': (context) => const ForgotPasswordScreen(),
             '/notes': (context) => const NotesScreen(),
             '/note-editor': (context) => const NoteEditorScreen(),
+            '/editor-test': (context) => const EditorTestScreen(),  // TODO: remove after widget review
             '/new-note': (context) => const NewNoteScreen(),
             '/add-collaborator': (context) => const _AddCollaboratorRouter(),
             '/invitations-inbox': (context) => const InvitationsInboxScreen(),

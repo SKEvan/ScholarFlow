@@ -146,6 +146,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
 
     return Scaffold(
       backgroundColor: lightSkyBlue,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).pushNamed('/editor-test'),
+        label: const Text('Test Editor Widget'),
+        icon: const Icon(Icons.edit_note_rounded),
+      ),
       body: Stack(
         children: [
           // Subtle Ambient Background Shapes

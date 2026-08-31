@@ -107,6 +107,26 @@ class AcceptInvitationRequest(BaseModel):
     accepting_user_id: str                  # UUID → str
 
 
+class AssignSectionOwnerRequest(BaseModel):
+    owner_user_id: str                       # UUID → str
+    actor_user_id: str | None = None         # caller; must be the project owner (leader)
+
+
+class UpdateSectionContentRequest(BaseModel):
+    content: str
+    actor_user_id: str | None = None         # caller; must be this section's owner
+
+
+class CreateSectionEditRequest(BaseModel):
+    content: str
+    author_user_id: str                      # UUID → str
+
+
+class ResolveSectionEditRequest(BaseModel):
+    actor_user_id: str | None = None         # caller; must be this section's owner
+    reason: str | None = None                # optional; used on reject only
+
+
 class SignUpRequest(BaseModel):
     email: str
     password: str
@@ -762,6 +782,163 @@ def restore_version(project_id: str, payload: RestoreVersionRequest) -> dict:  #
     supabase_service.set_current_version(project_id, payload.version_id)
     supabase_service.update_project(project_id, {"current_version_id": payload.version_id})
     return {"restored": True, "version": version}
+
+
+# ---------------------------------------------------------------------- #
+# Project Sections (Abstract / Introduction / Literature Review / Methodology)
+# ---------------------------------------------------------------------- #
+#
+# Roles: the project owner (owner_id) is the "leader" and is the only one
+# who can assign a section's owner. Only that section's assigned owner can
+# edit its approved content directly or approve/reject edit requests made
+# against it by other members.
+
+_ALLOWED_SECTION_KEYS = {"abstract", "introduction", "literature_review", "methodology"}
+
+
+def _require_valid_section_key(section_key: str) -> str:
+    key = (section_key or "").strip().lower()
+    if key not in _ALLOWED_SECTION_KEYS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid section '{section_key}'. Expected one of "
+                   f"{sorted(_ALLOWED_SECTION_KEYS)}.",
+        )
+    return key
+
+
+def _require_section_owner(project_id: str, section_key: str, actor_user_id: Optional[str]) -> str:
+    """Confirm the calling user is the assigned owner of this section."""
+    if not actor_user_id or not str(actor_user_id).strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Only this section's owner can perform this action.",
+        )
+    section = supabase_service.get_project_section(project_id, section_key)
+    owner_id = section.get("owner_user_id") if isinstance(section, dict) else None
+    if not owner_id or str(owner_id) != str(actor_user_id).strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Only this section's owner can perform this action.",
+        )
+    return str(actor_user_id).strip()
+
+
+@app.get("/projects/{project_id}/sections")
+def list_project_sections(project_id: str) -> dict:   # UUID → str
+    _ensure_supabase()
+    return {"sections": supabase_service.list_project_sections(project_id)}
+
+
+@app.put("/projects/{project_id}/sections/{section_key}/owner")
+def assign_section_owner(
+    project_id: str, section_key: str, payload: AssignSectionOwnerRequest
+) -> dict:
+    _ensure_supabase()
+    _require_project_owner(project_id, payload.actor_user_id)
+    key = _require_valid_section_key(section_key)
+    owner_user_id = (payload.owner_user_id or "").strip()
+    if not owner_user_id:
+        raise HTTPException(status_code=400, detail="owner_user_id is required.")
+    section = supabase_service.set_section_owner(project_id, key, owner_user_id)
+    return {"section": section}
+
+
+@app.put("/projects/{project_id}/sections/{section_key}/content")
+def update_section_content(
+    project_id: str, section_key: str, payload: UpdateSectionContentRequest
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    actor = _require_section_owner(project_id, key, payload.actor_user_id)
+    section = supabase_service.update_section_content(project_id, key, payload.content, actor)
+    return {"section": section}
+
+
+@app.post("/projects/{project_id}/sections/{section_key}/edit-requests")
+def create_section_edit_request(
+    project_id: str, section_key: str, payload: CreateSectionEditRequest
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    author_user_id = (payload.author_user_id or "").strip()
+    if not author_user_id:
+        raise HTTPException(status_code=400, detail="author_user_id is required.")
+    section = supabase_service.get_project_section(project_id, key)
+    owner_id = section.get("owner_user_id") if isinstance(section, dict) else None
+    if owner_id and str(owner_id) == author_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="The section owner edits directly; use the content endpoint instead.",
+        )
+    request = supabase_service.create_section_edit_request(
+        project_id, key, author_user_id, payload.content
+    )
+    return {"edit_request": request}
+
+
+@app.get("/projects/{project_id}/sections/{section_key}/edit-requests")
+def list_section_edit_requests(
+    project_id: str, section_key: str, status: str | None = None
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    return {
+        "edit_requests": supabase_service.list_section_edit_requests(
+            project_id, key, status=status
+        )
+    }
+
+
+@app.post("/projects/{project_id}/sections/{section_key}/edit-requests/{request_id}/approve")
+def approve_section_edit_request(
+    project_id: str,
+    section_key: str,
+    request_id: str,
+    payload: ResolveSectionEditRequest,
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    actor = _require_section_owner(project_id, key, payload.actor_user_id)
+    edit_request = supabase_service.get_section_edit_request(request_id)
+    if (
+        not edit_request
+        or edit_request.get("project_id") != project_id
+        or edit_request.get("section_key") != key
+    ):
+        raise HTTPException(status_code=404, detail="Edit request not found.")
+    if edit_request.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="This edit request has already been resolved.")
+    resolved = supabase_service.resolve_section_edit_request(request_id, "approved", actor)
+    section = supabase_service.update_section_content(
+        project_id, key, edit_request.get("proposed_content", ""), actor
+    )
+    return {"edit_request": resolved, "section": section}
+
+
+@app.post("/projects/{project_id}/sections/{section_key}/edit-requests/{request_id}/reject")
+def reject_section_edit_request(
+    project_id: str,
+    section_key: str,
+    request_id: str,
+    payload: ResolveSectionEditRequest,
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    actor = _require_section_owner(project_id, key, payload.actor_user_id)
+    edit_request = supabase_service.get_section_edit_request(request_id)
+    if (
+        not edit_request
+        or edit_request.get("project_id") != project_id
+        or edit_request.get("section_key") != key
+    ):
+        raise HTTPException(status_code=404, detail="Edit request not found.")
+    if edit_request.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="This edit request has already been resolved.")
+    resolved = supabase_service.resolve_section_edit_request(
+        request_id, "rejected", actor, rejection_reason=payload.reason
+    )
+    return {"edit_request": resolved}
 
 
 if __name__ == "__main__":

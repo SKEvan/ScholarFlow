@@ -654,6 +654,168 @@ class SupabaseService:
         )
 
     # ------------------------------------------------------------------ #
+    # Project Sections (Abstract / Introduction / Literature Review / Methodology)
+    # ------------------------------------------------------------------ #
+
+    _SECTION_KEYS = ("abstract", "introduction", "literature_review", "methodology")
+    _SECTION_SELECT = (
+        "id,project_id,section_key,owner_user_id,approved_content,approved_by,"
+        "updated_at,created_at,"
+        "owner:owner_user_id(id,full_name,avatar_url),"
+        "approver:approved_by(id,full_name,avatar_url)"
+    )
+    _EDIT_REQUEST_SELECT = (
+        "id,project_id,section_key,author_user_id,proposed_content,status,"
+        "rejection_reason,resolved_by,resolved_at,created_at,updated_at,"
+        "author:author_user_id(id,full_name,avatar_url),"
+        "resolver:resolved_by(id,full_name,avatar_url)"
+    )
+
+    def _default_section(self, project_id: str, section_key: str) -> Dict[str, Any]:
+        # Synthesized placeholder for a section that hasn't been touched
+        # yet — no row is created until an owner is assigned or content
+        # is saved, so list/get calls stay correct without provisioning.
+        return {
+            "id": None,
+            "project_id": project_id,
+            "section_key": section_key,
+            "owner_user_id": None,
+            "owner": None,
+            "approved_content": "",
+            "approved_by": None,
+            "approver": None,
+            "updated_at": None,
+            "created_at": None,
+        }
+
+    def list_project_sections(self, project_id: str) -> List[Dict[str, Any]]:   # UUID → str
+        result = self._request(
+            "GET",
+            "project_sections",
+            params={"project_id": f"eq.{project_id}", "select": self._SECTION_SELECT},
+        )
+        rows = result if isinstance(result, list) else []
+        by_key = {row["section_key"]: row for row in rows if row.get("section_key")}
+        return [
+            by_key.get(key) or self._default_section(project_id, key)
+            for key in self._SECTION_KEYS
+        ]
+
+    def get_project_section(self, project_id: str, section_key: str) -> Dict[str, Any]:   # UUID → str
+        result = self._request(
+            "GET",
+            "project_sections",
+            params={
+                "project_id": f"eq.{project_id}",
+                "section_key": f"eq.{section_key}",
+                "select": self._SECTION_SELECT,
+            },
+        )
+        row = self._single(result)
+        return row or self._default_section(project_id, section_key)
+
+    def _upsert_section(
+        self, project_id: str, section_key: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        # POST with on_conflict + merge-duplicates upserts the (project_id,
+        # section_key) row: creates it on first touch, otherwise patches
+        # only the given columns — same pattern as sign_up_user's profile
+        # upsert below.
+        payload = {"project_id": project_id, "section_key": section_key, **updates}
+        result = self._request(
+            "POST",
+            "project_sections",
+            params={
+                "on_conflict": "project_id,section_key",
+                "select": self._SECTION_SELECT,
+            },
+            json_body=payload,
+            prefer="resolution=merge-duplicates,return=representation",
+        )
+        return self._single(result)
+
+    def set_section_owner(
+        self, project_id: str, section_key: str, owner_user_id: str
+    ) -> Dict[str, Any]:
+        return self._upsert_section(project_id, section_key, {"owner_user_id": owner_user_id})
+
+    def update_section_content(
+        self, project_id: str, section_key: str, content: str, actor_user_id: str
+    ) -> Dict[str, Any]:
+        return self._upsert_section(
+            project_id,
+            section_key,
+            {
+                "approved_content": content,
+                "approved_by": actor_user_id,
+                "updated_at": _utcnow_iso(),
+            },
+        )
+
+    def create_section_edit_request(
+        self, project_id: str, section_key: str, author_user_id: str, content: str
+    ) -> Dict[str, Any]:
+        payload = {
+            "project_id": project_id,
+            "section_key": section_key,
+            "author_user_id": author_user_id,
+            "proposed_content": content,
+            "status": "pending",
+        }
+        result = self._request(
+            "POST",
+            "project_section_edit_requests",
+            params={"select": self._EDIT_REQUEST_SELECT},
+            json_body=payload,
+        )
+        return self._single(result)
+
+    def list_section_edit_requests(
+        self, project_id: str, section_key: str, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {
+            "project_id": f"eq.{project_id}",
+            "section_key": f"eq.{section_key}",
+            "select": self._EDIT_REQUEST_SELECT,
+            "order": "created_at.desc",
+        }
+        if status:
+            params["status"] = f"eq.{status}"
+        result = self._request("GET", "project_section_edit_requests", params=params)
+        return result if isinstance(result, list) else []
+
+    def get_section_edit_request(self, request_id: str) -> Dict[str, Any]:   # UUID → str
+        result = self._request(
+            "GET",
+            "project_section_edit_requests",
+            params={"id": f"eq.{request_id}", "select": self._EDIT_REQUEST_SELECT},
+        )
+        return self._single(result)
+
+    def resolve_section_edit_request(
+        self,
+        request_id: str,
+        status: str,
+        resolved_by: str,
+        rejection_reason: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        updates: Dict[str, Any] = {
+            "status": status,
+            "resolved_by": resolved_by,
+            "resolved_at": _utcnow_iso(),
+            "updated_at": _utcnow_iso(),
+        }
+        if rejection_reason is not None:
+            updates["rejection_reason"] = rejection_reason
+        result = self._request(
+            "PATCH",
+            "project_section_edit_requests",
+            params={"id": f"eq.{request_id}", "select": self._EDIT_REQUEST_SELECT},
+            json_body=updates,
+        )
+        return self._single(result)
+
+    # ------------------------------------------------------------------ #
     # Auth
     # ------------------------------------------------------------------ #
 

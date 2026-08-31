@@ -16,6 +16,36 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   final TextEditingController _versionNameController = TextEditingController();
   final TextEditingController _versionNoteController = TextEditingController();
 
+  // Draft sections, each rendered as its own project-card-styled tile.
+  // Tapping Edit on a card pushes a dedicated full-screen editor for it.
+  static const _draftSections = [
+    {
+      'key': 'abstract',
+      'label': 'Abstract',
+      'icon': Icons.summarize_rounded,
+      'description':
+          'A concise summary of the research problem, methods, and findings.',
+    },
+    {
+      'key': 'introduction',
+      'label': 'Introduction',
+      'icon': Icons.flag_rounded,
+      'description': 'Background, motivation, and objectives of the study.',
+    },
+    {
+      'key': 'literature_review',
+      'label': 'Literature Review',
+      'icon': Icons.menu_book_rounded,
+      'description': 'Summary and analysis of related prior work.',
+    },
+    {
+      'key': 'methodology',
+      'label': 'Methodology',
+      'icon': Icons.science_rounded,
+      'description': 'Research design, data, and methods used.',
+    },
+  ];
+
   final List<Map<String, dynamic>> _aiTools = [
     {
       'icon': Icons.summarize,
@@ -73,6 +103,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     _versionNameController.dispose();
     _versionNoteController.dispose();
     super.dispose();
+  }
+
+  void _openSectionEditor(Map<String, Object> section) {
+    if (_projectId == null) return;
+    Navigator.of(context).pushNamed(
+      '/project-section-editor',
+      arguments: {
+        'projectId': _projectId,
+        'projectTitle': _projectTitle,
+        'sectionKey': section['key'],
+        'sectionLabel': section['label'],
+      },
+    );
   }
 
   @override
@@ -578,6 +621,139 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
+  Widget _buildDraftSectionCard(ThemeData theme, Map<String, Object> section) {
+    final icon = section['icon'] as IconData;
+    final label = section['label'] as String;
+    final description = section['description'] as String;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openSectionEditor(section),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF017ECB).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: const Color(0xFF017ECB), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF0F172A),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 15,
+                        color: Color(0xFF64748B),
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Last edited by You',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Material(
+                    color: const Color(0xFF017ECB).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => _openSectionEditor(section),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit_rounded,
+                              size: 14,
+                              color: Color(0xFF017ECB),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Edit',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF017ECB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAIToolTile(ThemeData theme, Map<String, dynamic> tool) {
     return InkWell(
       onTap: () => _openAgentScreen(tool),
@@ -1063,7 +1239,26 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                         ),
                       ],
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+                      // ── Draft Sections — one project-card-styled tile per
+                      // section. Tap Edit (or the card) to open its editor. ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Draft Sections',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ..._draftSections.map(
+                        (section) => Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: _buildDraftSectionCard(theme, section),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       // ── AI Collaboration Tools (always visible) ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),

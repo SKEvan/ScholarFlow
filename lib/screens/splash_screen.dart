@@ -25,11 +25,10 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Debug builds hit a local uvicorn so you can test without
-    // pushing; release builds keep talking to Render.
-    if (kDebugMode) {
-      BackendApi.useLocalBackend();
-    }
+    // Always use the production Render backend (https://scholarflow-i4bq.onrender.com).
+    // To test against a local uvicorn instead, temporarily call:
+    //   BackendApi.useLocalBackend();
+    BackendApi.useProductionBackend();
 
     _controller = AnimationController(
       vsync: this,

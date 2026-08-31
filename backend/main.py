@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from fastapi import Body, FastAPI
 from fastapi import HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
@@ -30,6 +31,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ScholarFlow Backend", version="0.1.0")
+
+# Allow Flutter web (Chrome) and any other origin to call the API.
+# In production you can tighten this to your actual web domain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins; restrict if needed
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class AbstractItem(BaseModel):

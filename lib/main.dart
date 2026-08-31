@@ -17,6 +17,7 @@ import 'screens/upload_paper_screen.dart';
 import 'screens/search_results_screen.dart';
 import 'screens/projects_screen.dart';
 import 'screens/project_details_screen.dart';
+import 'screens/project_section_editor_screen.dart';
 import 'screens/create_folder_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/summarizer_review_screen.dart';
@@ -73,6 +74,8 @@ class ScholarFlowApp extends StatelessWidget {
             '/search-results': (context) => const SearchResultsScreen(),
             '/projects': (context) => const ProjectsScreen(),
             '/project-details': (context) => const ProjectDetailsScreen(),
+            '/project-section-editor': (context) =>
+                const ProjectSectionEditorScreen(),
             '/create-folder': (context) => const CreateFolderScreen(),
             '/insights': (context) => const InsightsScreen(),
             '/summarizer-review': (context) => const SummarizerReviewScreen(),

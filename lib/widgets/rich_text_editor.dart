@@ -21,6 +21,7 @@ class RichTextEditor extends StatefulWidget {
     this.onSave,
     this.onChanged,
     this.readOnly = false,
+    this.saveLabel = 'Save now',
   });
 
   final String initialTitle;
@@ -28,6 +29,11 @@ class RichTextEditor extends StatefulWidget {
   final void Function(String title, String content)? onSave;
   final void Function(String title, String content)? onChanged;
   final bool readOnly;
+
+  /// Label for the footer save button. Callers that route the save
+  /// through an approval flow (e.g. a non-owner submitting an edit
+  /// request) can override this, e.g. "Send Approval Request".
+  final String saveLabel;
 
   @override
   State<RichTextEditor> createState() => RichTextEditorState();
@@ -517,7 +523,7 @@ class RichTextEditorState extends State<RichTextEditor> {
                     Icon(Icons.save_alt_rounded, size: 15.sp, color: Colors.white),
                     SizedBox(width: 6.w),
                     Text(
-                      'Save now',
+                      widget.saveLabel,
                       style: GoogleFonts.fredoka(
                         fontSize: 13.sp,
                         color: Colors.white,

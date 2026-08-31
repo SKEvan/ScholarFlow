@@ -40,6 +40,7 @@ dependencies:
   http: ^1.4.0
   shared_preferences: ^2.3.2
   supabase_flutter: ^2.8.0
+  diff_match_patch: ^0.4.1
 
 dev_dependencies:
   flutter_test:

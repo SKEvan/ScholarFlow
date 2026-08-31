@@ -871,6 +871,254 @@ class BackendApi {
     }
     throw Exception('Unexpected backend response shape.');
   }
+
+  // ------------------------------------------------------------------ //
+  // Project Sections (Abstract / Introduction / Literature Review /
+  // Methodology) — section ownership + edit-request approval workflow.
+  // ------------------------------------------------------------------ //
+
+  /// Fetches all four sections for [projectId], each with its owner (if
+  /// assigned) and current approved content. Sections that have never
+  /// been touched come back as empty/unowned placeholders rather than
+  /// being omitted.
+  static Future<List<Map<String, dynamic>>> listProjectSections(
+    String projectId,
+  ) async {
+    final response = await _send(
+      () => http.get(Uri.parse('$baseUrl/projects/$projectId/sections')),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final sections = decoded is Map<String, dynamic> ? decoded['sections'] : null;
+    if (sections is List) {
+      return sections
+          .whereType<Map>()
+          .map((s) => Map<String, dynamic>.from(s))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Assigns [ownerUserId] as the owner of [sectionKey] within [projectId].
+  /// [actorUserId] must be the project owner (the "leader") or the
+  /// backend will respond with 403.
+  static Future<Map<String, dynamic>> assignSectionOwner({
+    required String projectId,
+    required String sectionKey,
+    required String ownerUserId,
+    required String actorUserId,
+  }) async {
+    final response = await _send(
+      () => http.put(
+        Uri.parse('$baseUrl/projects/$projectId/sections/$sectionKey/owner'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'owner_user_id': ownerUserId,
+          'actor_user_id': actorUserId,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final section = decoded['section'];
+      if (section is Map) {
+        return Map<String, dynamic>.from(section);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Applies [content] directly to [sectionKey]'s approved (live) content.
+  /// [actorUserId] must be that section's assigned owner or the backend
+  /// will respond with 403 — non-owners should call
+  /// [createSectionEditRequest] instead.
+  static Future<Map<String, dynamic>> updateSectionContent({
+    required String projectId,
+    required String sectionKey,
+    required String content,
+    required String actorUserId,
+  }) async {
+    final response = await _send(
+      () => http.put(
+        Uri.parse('$baseUrl/projects/$projectId/sections/$sectionKey/content'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'content': content,
+          'actor_user_id': actorUserId,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final section = decoded['section'];
+      if (section is Map) {
+        return Map<String, dynamic>.from(section);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Submits [content] as a pending edit request on [sectionKey], made by
+  /// [authorUserId] (must not be that section's owner — the backend
+  /// rejects that with 400; owners should call [updateSectionContent]).
+  static Future<Map<String, dynamic>> createSectionEditRequest({
+    required String projectId,
+    required String sectionKey,
+    required String content,
+    required String authorUserId,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/sections/$sectionKey/edit-requests',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'content': content,
+          'author_user_id': authorUserId,
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final editRequest = decoded['edit_request'];
+      if (editRequest is Map) {
+        return Map<String, dynamic>.from(editRequest);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Lists edit requests for [sectionKey], optionally filtered by
+  /// [status] (`pending`, `approved`, or `rejected`).
+  static Future<List<Map<String, dynamic>>> listSectionEditRequests({
+    required String projectId,
+    required String sectionKey,
+    String? status,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/projects/$projectId/sections/$sectionKey/edit-requests',
+    ).replace(queryParameters: status != null ? {'status': status} : null);
+
+    final response = await _send(() => http.get(uri));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final requests = decoded is Map<String, dynamic> ? decoded['edit_requests'] : null;
+    if (requests is List) {
+      return requests
+          .whereType<Map>()
+          .map((r) => Map<String, dynamic>.from(r))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Approves [requestId] on [sectionKey] — copies its proposed content
+  /// into the section's approved content. [actorUserId] must be that
+  /// section's owner or the backend will respond with 403.
+  static Future<Map<String, dynamic>> approveSectionEditRequest({
+    required String projectId,
+    required String sectionKey,
+    required String requestId,
+    required String actorUserId,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/sections/$sectionKey/edit-requests/$requestId/approve',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'actor_user_id': actorUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final editRequest = decoded['edit_request'];
+      if (editRequest is Map) {
+        return Map<String, dynamic>.from(editRequest);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Rejects [requestId] on [sectionKey], optionally with a [reason].
+  /// [actorUserId] must be that section's owner or the backend will
+  /// respond with 403.
+  static Future<Map<String, dynamic>> rejectSectionEditRequest({
+    required String projectId,
+    required String sectionKey,
+    required String requestId,
+    required String actorUserId,
+    String? reason,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/sections/$sectionKey/edit-requests/$requestId/reject',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'actor_user_id': actorUserId,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final editRequest = decoded['edit_request'];
+      if (editRequest is Map) {
+        return Map<String, dynamic>.from(editRequest);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
 }
 
 // ── SSE streaming helpers ────────────────────────────────────────────────────

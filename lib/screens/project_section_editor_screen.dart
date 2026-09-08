@@ -380,12 +380,15 @@ class _ProjectSectionEditorScreenState
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Main Approved Content',
-                            style: GoogleFonts.fredoka(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14.sp,
-                              color: const Color(0xFF0F172A),
+                          Flexible(
+                            child: Text(
+                              'Main Approved Content',
+                              style: GoogleFonts.fredoka(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14.sp,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           SizedBox(width: 8.w),
@@ -416,10 +419,12 @@ class _ProjectSectionEditorScreenState
                           fontSize: 11.sp,
                           color: const Color(0xFF64748B),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+                SizedBox(width: 8.w),
                 FilledButton.tonalIcon(
                   onPressed: hasContent ? _copyToEditor : null,
                   style: FilledButton.styleFrom(
@@ -431,6 +436,7 @@ class _ProjectSectionEditorScreenState
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.r),
                     ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   icon: Icon(Icons.arrow_downward_rounded, size: 15.sp),
                   label: Text(

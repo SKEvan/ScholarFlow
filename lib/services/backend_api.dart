@@ -1119,6 +1119,105 @@ class BackendApi {
     }
     throw Exception('Unexpected backend response shape.');
   }
+
+  /// Creates a new version snapshot for [sectionKey].
+  static Future<Map<String, dynamic>> createSectionVersion({
+    required String projectId,
+    required String sectionKey,
+    required String content,
+    required String editedBy,
+    String? message,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/projects/$projectId/sections/$sectionKey/versions'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'content': content,
+          'edited_by': editedBy,
+          if (message != null && message.trim().isNotEmpty)
+            'message': message.trim(),
+        }),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final version = decoded['version'];
+      if (version is Map) {
+        return Map<String, dynamic>.from(version);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Lists all saved versions for [sectionKey], newest first.
+  static Future<List<Map<String, dynamic>>> listSectionVersions({
+    required String projectId,
+    required String sectionKey,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/projects/$projectId/sections/$sectionKey/versions',
+    );
+
+    final response = await _send(() => http.get(uri));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    final versions =
+        decoded is Map<String, dynamic> ? decoded['versions'] : null;
+    if (versions is List) {
+      return versions
+          .whereType<Map>()
+          .map((v) => Map<String, dynamic>.from(v))
+          .toList();
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
+
+  /// Creates an approval request using the content from a specific [versionId].
+  static Future<Map<String, dynamic>> requestVersionApproval({
+    required String projectId,
+    required String sectionKey,
+    required String versionId,
+    required String authorUserId,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse(
+          '$baseUrl/projects/$projectId/sections/$sectionKey/versions/$versionId/request-approval',
+        ),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'author_user_id': authorUserId}),
+      ),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Backend request failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final editRequest = decoded['edit_request'];
+      if (editRequest is Map) {
+        return Map<String, dynamic>.from(editRequest);
+      }
+    }
+    throw Exception('Unexpected backend response shape.');
+  }
 }
 
 // ── SSE streaming helpers ────────────────────────────────────────────────────

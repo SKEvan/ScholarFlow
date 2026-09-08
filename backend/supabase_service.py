@@ -670,6 +670,10 @@ class SupabaseService:
         "author:author_user_id(id,full_name,avatar_url),"
         "resolver:resolved_by(id,full_name,avatar_url)"
     )
+    _SECTION_VERSION_SELECT = (
+        "id,project_id,section_key,content,edited_by,created_at,message,"
+        "editor:edited_by(id,full_name,avatar_url)"
+    )
 
     def _default_section(self, project_id: str, section_key: str) -> Dict[str, Any]:
         # Synthesized placeholder for a section that hasn't been touched
@@ -812,6 +816,58 @@ class SupabaseService:
             "project_section_edit_requests",
             params={"id": f"eq.{request_id}", "select": self._EDIT_REQUEST_SELECT},
             json_body=updates,
+        )
+        return self._single(result)
+
+    def create_section_version(
+        self,
+        project_id: str,
+        section_key: str,
+        content: str,
+        edited_by: str,
+        message: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
+            "project_id": project_id,
+            "section_key": section_key,
+            "content": content,
+            "edited_by": edited_by,
+        }
+        if message is not None and message.strip():
+            payload["message"] = message.strip()
+        result = self._request(
+            "POST",
+            "section_versions",
+            params={"select": self._SECTION_VERSION_SELECT},
+            json_body=payload,
+        )
+        return self._single(result)
+
+    def list_section_versions(
+        self, project_id: str, section_key: str
+    ) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {
+            "project_id": f"eq.{project_id}",
+            "section_key": f"eq.{section_key}",
+            "select": self._SECTION_VERSION_SELECT,
+            "order": "created_at.desc",
+        }
+        result = self._request("GET", "section_versions", params=params)
+        return result if isinstance(result, list) else []
+
+    def get_section_version(self, version_id: str) -> Dict[str, Any]:
+        result = self._request(
+            "GET",
+            "section_versions",
+            params={"id": f"eq.{version_id}", "select": self._SECTION_VERSION_SELECT},
+        )
+        return self._single(result)
+
+    def delete_section_version(self, version_id: str) -> Dict[str, Any]:
+        result = self._request(
+            "DELETE",
+            "section_versions",
+            params={"id": f"eq.{version_id}"},
         )
         return self._single(result)
 

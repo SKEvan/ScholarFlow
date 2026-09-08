@@ -183,6 +183,30 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         .then((_) => _loadSections());
   }
 
+  void _openSectionVersions(Map<String, Object> def) {
+    if (_projectId == null) {
+      return;
+    }
+    final sectionKey = def['key'] as String;
+    final data = _sectionData[sectionKey];
+    final ownerUserId = data?['owner_user_id']?.toString();
+    final isOwner =
+        ownerUserId != null && ownerUserId == UserSession.userId;
+    Navigator.of(context)
+        .pushNamed(
+          '/project-section-versions',
+          arguments: {
+            'projectId': _projectId,
+            'projectTitle': _projectTitle,
+            'sectionKey': sectionKey,
+            'sectionLabel': def['label'],
+            'isOwner': isOwner,
+            'approvedContent': data?['approved_content']?.toString() ?? '',
+          },
+        )
+        .then((_) => _loadSections());
+  }
+
   Future<void> _openAssignOwnerSheet(Map<String, Object> def) async {
     if (_projectId == null) {
       return;
@@ -943,6 +967,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           label: 'Requests',
                           onTap: () => _openEditRequests(def),
                         ),
+                      _sectionActionPill(
+                        icon: Icons.history_rounded,
+                        label: 'Versions',
+                        onTap: () => _openSectionVersions(def),
+                      ),
                       _sectionActionPill(
                         icon: Icons.edit_rounded,
                         label: 'Edit',

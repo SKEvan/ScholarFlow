@@ -141,6 +141,17 @@ class RichTextEditorState extends State<RichTextEditor> {
     }
   }
 
+  /// Programmatically replace editor content (e.g. for "Copy to Editor").
+  void setContent(String text) {
+    _contentCtrl.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  String get content => _contentCtrl.text;
+  String get title => _titleCtrl.text;
+
   // ── Format ─────────────────────────────────────────────────────────────────
 
   void _applyFormat(_FormatType fmt) {

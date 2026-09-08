@@ -127,6 +127,16 @@ class ResolveSectionEditRequest(BaseModel):
     reason: str | None = None                # optional; used on reject only
 
 
+class CreateSectionVersionRequest(BaseModel):
+    content: str
+    edited_by: str                           # UUID of the editor
+    message: str = ""                        # optional version note
+
+
+class RequestVersionApprovalRequest(BaseModel):
+    author_user_id: str                      # UUID of the requester
+
+
 class SignUpRequest(BaseModel):
     email: str
     password: str
@@ -939,6 +949,62 @@ def reject_section_edit_request(
         request_id, "rejected", actor, rejection_reason=payload.reason
     )
     return {"edit_request": resolved}
+
+
+@app.post("/projects/{project_id}/sections/{section_key}/versions")
+def create_section_version(
+    project_id: str, section_key: str, payload: CreateSectionVersionRequest
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    edited_by = (payload.edited_by or "").strip()
+    if not edited_by:
+        raise HTTPException(status_code=400, detail="edited_by is required.")
+    version = supabase_service.create_section_version(
+        project_id, key, payload.content, edited_by, payload.message
+    )
+    return {"version": version}
+
+
+@app.get("/projects/{project_id}/sections/{section_key}/versions")
+def list_section_versions(project_id: str, section_key: str) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    return {
+        "versions": supabase_service.list_section_versions(project_id, key)
+    }
+
+
+@app.post("/projects/{project_id}/sections/{section_key}/versions/{version_id}/request-approval")
+def request_version_approval(
+    project_id: str,
+    section_key: str,
+    version_id: str,
+    payload: RequestVersionApprovalRequest,
+) -> dict:
+    _ensure_supabase()
+    key = _require_valid_section_key(section_key)
+    author_user_id = (payload.author_user_id or "").strip()
+    if not author_user_id:
+        raise HTTPException(status_code=400, detail="author_user_id is required.")
+    version = supabase_service.get_section_version(version_id)
+    if (
+        not version
+        or version.get("project_id") != project_id
+        or version.get("section_key") != key
+    ):
+        raise HTTPException(status_code=404, detail="Version not found.")
+    section = supabase_service.get_project_section(project_id, key)
+    owner_id = section.get("owner_user_id") if isinstance(section, dict) else None
+    if owner_id and str(owner_id) == author_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="The section owner edits directly; approval requests are for non-owners.",
+        )
+    edit_request = supabase_service.create_section_edit_request(
+        project_id, key, author_user_id, version.get("content", "")
+    )
+    return {"edit_request": edit_request}
 
 
 if __name__ == "__main__":

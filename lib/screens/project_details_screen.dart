@@ -926,58 +926,52 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
+                  const Icon(
+                    Icons.person_outline_rounded,
+                    size: 15,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline_rounded,
-                          size: 15,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            statusText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF475569),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      statusText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF475569),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      if (_isLeader)
-                        _sectionActionPill(
-                          icon: Icons.person_add_alt_1_rounded,
-                          label: 'Assign',
-                          onTap: () => _openAssignOwnerSheet(def),
-                        ),
-                      if (isOwner)
-                        _sectionActionPill(
-                          icon: Icons.rate_review_outlined,
-                          label: 'Requests',
-                          onTap: () => _openEditRequests(def),
-                        ),
-                      _sectionActionPill(
-                        icon: Icons.history_rounded,
-                        label: 'Versions',
-                        onTap: () => _openSectionVersions(def),
-                      ),
-                      _sectionActionPill(
-                        icon: Icons.edit_rounded,
-                        label: 'Edit',
-                        onTap: () => _openSectionEditor(def),
-                      ),
-                    ],
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  if (_isLeader)
+                    _sectionActionPill(
+                      icon: Icons.person_add_alt_1_rounded,
+                      label: 'Assign',
+                      onTap: () => _openAssignOwnerSheet(def),
+                    ),
+                  if (isOwner)
+                    _sectionActionPill(
+                      icon: Icons.rate_review_outlined,
+                      label: 'Requests',
+                      onTap: () => _openEditRequests(def),
+                    ),
+                  _sectionActionPill(
+                    icon: Icons.history_rounded,
+                    label: 'Versions',
+                    onTap: () => _openSectionVersions(def),
+                  ),
+                  _sectionActionPill(
+                    icon: Icons.edit_rounded,
+                    label: 'Edit',
+                    onTap: () => _openSectionEditor(def),
                   ),
                 ],
               ),

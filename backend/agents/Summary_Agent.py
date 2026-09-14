@@ -24,7 +24,7 @@ if not GEMINI_API_KEY:
         "GEMINI_API_KEY not found. Add it to backend/agents/.env."
     )
 
-MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.0-flash")
 TOP_PAPERS = int(os.getenv("TOP_SUMMARY_PAPERS", "5"))
 MAX_SUMMARY_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)

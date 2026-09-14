@@ -430,8 +430,28 @@ class BackendApi {
           return;
         }
 
-        final parser = _SseParser(response.stream, controller);
-        await parser.run();
+        final contentType =
+            response.headers['content-type']?.toLowerCase() ?? '';
+        if (contentType.contains('application/json')) {
+          final bodyStr = await response.stream.bytesToString();
+          final dynamic decoded = jsonDecode(bodyStr);
+          if (decoded is Map) {
+            if (!controller.isClosed) {
+              controller.add(
+                AgentStreamDone(Map<String, dynamic>.from(decoded)),
+              );
+            }
+          } else {
+            if (!controller.isClosed) {
+              controller.add(
+                AgentStreamError._('Unexpected JSON response shape: $bodyStr'),
+              );
+            }
+          }
+        } else {
+          final parser = _SseParser(response.stream, controller);
+          await parser.run();
+        }
       } catch (error) {
         if (!controller.isClosed) {
           controller.add(AgentStreamError._(error.toString()));

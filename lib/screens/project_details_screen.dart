@@ -1250,6 +1250,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Version history',
+            icon: const Icon(Icons.history, color: Colors.black),
+            onPressed: _showVersionHistory,
+          ),
+          IconButton(
             tooltip: 'Leave project',
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: _leaveProject,
@@ -1387,29 +1392,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _showSaveVersionDialog,
-                                icon: const Icon(Icons.save),
-                                label: const Text('Save Version'),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _showVersionHistory,
-                                icon: const Icon(Icons.history),
-                                label: const Text('Versions'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+
                       const SizedBox(height: 20),
                       // ── Research Papers (collapsed by default; tap the bar to expand) ──
                       Padding(

@@ -22,7 +22,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise EnvironmentError("GEMINI_API_KEY not found. Add it to backend/agents/.env.")
 
-MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.0-flash")
 MAX_LITERATURE_REVIEW_RETRIES = 3
 client = genai.Client(api_key=GEMINI_API_KEY)
 

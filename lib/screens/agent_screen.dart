@@ -75,11 +75,14 @@ class _AgentScreenState extends State<AgentScreen> {
     final choices = widget.toolConfig['choices'] as List? ?? [];
     _selectedChoice = choices.isNotEmpty ? choices.first.toString() : '';
 
-    // pre-select papers that have citations
-    _selectedPaperIds = _papers
+    // pre-select papers that have citations; fallback to all papers if none have citations
+    final cited = _papers
         .where((p) => (p['citations'] as num? ?? 0) > 0)
         .map((p) => p['id'].toString())
         .toSet();
+    _selectedPaperIds = cited.isNotEmpty
+        ? cited
+        : _papers.map((p) => p['id'].toString()).toSet();
 
     // Load the latest saved output for this tool from the project row.
     _loadLatestOutput();
